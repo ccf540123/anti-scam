@@ -1,0 +1,12 @@
+{
+  "dataset_id": 160055,
+  "dataset_title": "165反詐騙諮詢專線_假投資(博弈)網站",
+  "resource_uuid": "A00B1802-6A4A-42B4-B842-B66A2D937DAE",
+  "dataset_uuid": "033197D4-70F4-45EB-9FB8-6D83532B999A",
+  "official_download_url": "https://opdadm.moi.gov.tw/api/v1/no-auth/resource/api/dataset/033197D4-70F4-45EB-9FB8-6D83532B999A/resource/A00B1802-6A4A-42B4-B842-B66A2D937DAE/download",
+  "data_gov_page": "https://data.gov.tw/dataset/160055",
+  "published_date": "2022-12-07",
+  "download_date": "2026-09-30",
+  "snapshot_filename": "NPA_FAKE_INVEST_20260930.csv",
+  "notes": "官方假投資(博弈)詐騙網站週統計資料；非 176455 之歷史版。僅存檔與分析，未合併至 scam_165_urls.csv。"
+}
