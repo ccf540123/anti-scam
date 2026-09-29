@@ -1,17 +1,33 @@
 ﻿review_id,shortener_host,title,article_url,published_at,extracted_url,normalized_url,match_reason,review_status,destination_opened,destination_type,is_scam_related_destination,human_notes,reviewer
-1,pse.is,[新聞] 拒絕旁觀！網路詐騙通報查詢網展現公私協,https://www.ptt.cc/bbs/Bunco/M.1785642415.A.270.html,Sun Aug  2 11:46:50 2026,https://pse.is/9erwbk,pse.is/9erwbk,shortener_or_redirect_domain_host,pending,,,,,
-2,pse.is,[新聞] 拒絕旁觀！網路詐騙通報查詢網展現公私協,https://www.ptt.cc/bbs/Bunco/M.1785642415.A.270.html,Sun Aug  2 11:46:50 2026,https://pse.is/9erwg9,pse.is/9erwg9,shortener_or_redirect_domain_host,pending,,,,,
-3,reurl.cc,[新聞] 租屋詐騙新變種破解 3招破解假房東,https://www.ptt.cc/bbs/Bunco/M.1780049324.A.589.html,Fri May 29 18:08:40 2026,https://reurl.cc/Q2kM2o,reurl.cc/q2km2o,shortener_or_redirect_domain_host,pending,,,,,
-4,reurl.cc,[新聞] 今年84％詐騙案都Meta平台！打詐中心4方,https://www.ptt.cc/bbs/Bunco/M.1779496262.A.FBC.html,Sat May 23 08:30:58 2026,https://reurl.cc/epoVnM,reurl.cc/epovnm,shortener_or_redirect_domain_host,pending,,,,,
-5,reurl.cc,[資訊] 發票中獎詐騙郵件頻傳，別點擊信中假連結,https://www.ptt.cc/bbs/Bunco/M.1779427842.A.E21.html,Fri May 22 13:30:37 2026,https://reurl.cc/bdoEj6,reurl.cc/bdoej6,shortener_or_redirect_domain_host,pending,,,,,
-6,reurl.cc,[新聞] 假寄鞋真寄卡 男子險淪詐騙人頭戶,https://www.ptt.cc/bbs/Bunco/M.1778568846.A.071.html,Tue May 12 14:54:03 2026,https://reurl.cc/2avldm,reurl.cc/2avldm,shortener_or_redirect_domain_host,pending,,,,,
-7,reurl.cc,[新聞] 經濟部攜手4大超商 詐騙包裹退貨率逾6成,https://www.ptt.cc/bbs/Bunco/M.1774923118.A.A23.html,Tue Mar 31 10:11:51 2026,https://reurl.cc/DxXDj6,reurl.cc/dxxdj6,shortener_or_redirect_domain_host,pending,,,,,
-8,reurl.cc,[資訊] 歐告娃娃的一頁式詐騙廣告 請勿上當,https://www.ptt.cc/bbs/Bunco/M.1773639786.A.C63.html,Mon Mar 16 13:43:02 2026,https://reurl.cc/mpqaLl,reurl.cc/mpqall,shortener_or_redirect_domain_host,pending,,,,,
-9,reurl.cc,[資訊] 歐告娃娃的一頁式詐騙廣告 請勿上當,https://www.ptt.cc/bbs/Bunco/M.1773639786.A.C63.html,Mon Mar 16 13:43:02 2026,https://reurl.cc/dpVRxM,reurl.cc/dpvrxm,shortener_or_redirect_domain_host,pending,,,,,
-10,reurl.cc,[新聞] AI生成垃圾 詐騙集團詐騙個資收廣告費,https://www.ptt.cc/bbs/Bunco/M.1773109123.A.820.html,Tue Mar 10 10:18:40 2026,https://reurl.cc/dp0okM,reurl.cc/dp0okm,shortener_or_redirect_domain_host,pending,,,,,
-11,reurl.cc,[新聞] 羅浮宮爆門票詐騙！內鬼聯手導遊10年削3.8億 警方逮9人,https://www.ptt.cc/bbs/Bunco/M.1771176569.A.966.html,Mon Feb 16 01:29:27 2026,https://reurl.cc/qKQXVg,reurl.cc/qkqxvg,shortener_or_redirect_domain_host,pending,,,,,
-12,reurl.cc,[新聞] 手機號碼外洩慘噴2萬多塊？最新詐騙手法,https://www.ptt.cc/bbs/Bunco/M.1770092645.A.0FC.html,Tue Feb  3 12:24:02 2026,https://reurl.cc/zKdjvV,reurl.cc/zkdjvv,shortener_or_redirect_domain_host,pending,,,,,
-13,reurl.cc,[新聞] 詐騙橫行 全台上萬超商成重災區,https://www.ptt.cc/bbs/Bunco/M.1770092371.A.A87.html,Tue Feb  3 12:19:11 2026,https://reurl.cc/GG3R1Z,reurl.cc/gg3r1z,shortener_or_redirect_domain_host,pending,,,,,
+1,pse.is,[新聞] 拒絕旁觀！網路詐騙通報查詢網展現公私協,https://www.ptt.cc/bbs/Bunco/M.1785642415.A.270.html,Sun Aug  2 11:46:50 2026,https://pse.is/9erwbk,pse.is/9erwbk,shortener_or_redirect_domain_host,reviewed,yes,其他,no,只有圖片,陳定偉
+2,pse.is,[新聞] 拒絕旁觀！網路詐騙通報查詢網展現公私協,https://www.ptt.cc/bbs/Bunco/M.1785642415.A.270.html,Sun Aug  2 11:46:50 2026,https://pse.is/9erwg9,pse.is/9erwg9,shortener_or_redirect_domain_host,reviewed,yes,其他,no,只有圖片,陳定偉
+3,reurl.cc,[新聞] 租屋詐騙新變種破解 3招破解假房東,https://www.ptt.cc/bbs/Bunco/M.1780049324.A.589.html,Fri May 29 18:08:40 2026,https://reurl.cc/Q2kM2o,reurl.cc/q2km2o,shortener_or_redirect_domain_host,reviewed,yes,新聞,unsure,網站是說明租屋詐騙的手法,陳定偉
+4,reurl.cc,[新聞] 今年84％詐騙案都Meta平台！打詐中心4方,https://www.ptt.cc/bbs/Bunco/M.1779496262.A.FBC.html,Sat May 23 08:30:58 2026,https://reurl.cc/epoVnM,reurl.cc/epovnm,shortener_or_redirect_domain_host,reviewed,yes,新聞,no,,陳定偉
+5,reurl.cc,[資訊] 發票中獎詐騙郵件頻傳，別點擊信中假連結,https://www.ptt.cc/bbs/Bunco/M.1779427842.A.E21.html,Fri May 22 13:30:37 2026,https://reurl.cc/bdoEj6,reurl.cc/bdoej6,shortener_or_redirect_domain_host,reviewed,yes,政府或防詐宣導,no,只是宣導看發票中獎資訊要留意email,陳定偉
+6,reurl.cc,[新聞] 假寄鞋真寄卡 男子險淪詐騙人頭戶,https://www.ptt.cc/bbs/Bunco/M.1778568846.A.071.html,Tue May 12 14:54:03 2026,https://reurl.cc/2avldm,reurl.cc/2avldm,shortener_or_redirect_domain_host,reviewed,yes,新聞,unsure,"警方呼籲，詐騙集團常以「辦理貸款」、「快速放款」等理由，要求民眾提供或寄送提款
+卡、存摺或金融帳戶資料，民眾務必提高警覺，切勿將金融帳戶資料交付他人，以免在不
+知情的情況下淪為詐騙集團幫兇，甚至觸法受罰。",陳定偉
+7,reurl.cc,[新聞] 經濟部攜手4大超商 詐騙包裹退貨率逾6成,https://www.ptt.cc/bbs/Bunco/M.1774923118.A.A23.html,Tue Mar 31 10:11:51 2026,https://reurl.cc/DxXDj6,reurl.cc/dxxdj6,shortener_or_redirect_domain_host,reviewed,yes,新聞,no,,陳定偉
+8,reurl.cc,[資訊] 歐告娃娃的一頁式詐騙廣告 請勿上當,https://www.ptt.cc/bbs/Bunco/M.1773639786.A.C63.html,Mon Mar 16 13:43:02 2026,https://reurl.cc/mpqaLl,reurl.cc/mpqall,shortener_or_redirect_domain_host,reviewed,yes,社群平台,yes,"貼文者說歐告娃娃的一頁式詐騙廣告，即使有客服也不代表是正版，請勿受騙。
+
+無論是個資和加友都要小心。
+但網站已下架",陳定偉
+9,reurl.cc,[資訊] 歐告娃娃的一頁式詐騙廣告 請勿上當,https://www.ptt.cc/bbs/Bunco/M.1773639786.A.C63.html,Mon Mar 16 13:43:02 2026,https://reurl.cc/dpVRxM,reurl.cc/dpvrxm,shortener_or_redirect_domain_host,pending,,,,,陳定偉
+10,reurl.cc,[新聞] AI生成垃圾 詐騙集團詐騙個資收廣告費,https://www.ptt.cc/bbs/Bunco/M.1773109123.A.820.html,Tue Mar 10 10:18:40 2026,https://reurl.cc/dp0okM,reurl.cc/dp0okm,shortener_or_redirect_domain_host,reviewed,yes,新聞,no,,陳定偉
+11,reurl.cc,[新聞] 羅浮宮爆門票詐騙！內鬼聯手導遊10年削3.8億 警方逮9人,https://www.ptt.cc/bbs/Bunco/M.1771176569.A.966.html,Mon Feb 16 01:29:27 2026,https://reurl.cc/qKQXVg,reurl.cc/qkqxvg,shortener_or_redirect_domain_host,reviewed,yes,新聞,yes,羅浮宮門票詐騙？,陳定偉
+12,reurl.cc,[新聞] 手機號碼外洩慘噴2萬多塊？最新詐騙手法,https://www.ptt.cc/bbs/Bunco/M.1770092645.A.0FC.html,Tue Feb  3 12:24:02 2026,https://reurl.cc/zKdjvV,reurl.cc/zkdjvv,shortener_or_redirect_domain_host,reviewed,yes,政府或防詐宣導,yes,"1、聲稱「免財力證明」、「辦門號協助美化信用」都是假貸款行銷話術。
+
+2、正規機構不會要你提供簡訊OTP驗證碼。
+
+3、正規機構不會幫你美化信用，這些都是私人貸款公司的吸血手法。
+詐騙話術解析
+1、假代辦機構在臉書社團、Google廣告投放貸款廣告，吸引被害人點擊，並透過LINE加入假客服詢問基本資料及假諮詢。
+
+2、假客服聲稱被害人條件還可以，不過需要配合辦門號刷小額代繳，需要配合提供簡訊OTP驗證碼。
+
+3、當被害人收到逾期帳單通知、存證信函等，發覺有異，詢問假客服卻不讀不回、甚至遭封鎖。
+裡面還有使用者的經歷 可以參考",陳定偉
+13,reurl.cc,[新聞] 詐騙橫行 全台上萬超商成重災區,https://www.ptt.cc/bbs/Bunco/M.1770092371.A.A87.html,Tue Feb  3 12:19:11 2026,https://reurl.cc/GG3R1Z,reurl.cc/gg3r1z,shortener_or_redirect_domain_host,pending,,,,,陳定偉
 14,reurl.cc,[新聞] 情侶檔涉組詐騙機房被通緝 警強勢攻堅,https://www.ptt.cc/bbs/Bunco/M.1769177362.A.21F.html,Fri Jan 23 22:09:19 2026,https://reurl.cc/Eb0QzA,reurl.cc/eb0qza,shortener_or_redirect_domain_host,pending,,,,,
 15,reurl.cc,[新聞] 刑事局追出14家物流與中詐騙合作 附清單,https://www.ptt.cc/bbs/Bunco/M.1767231674.A.886.html,Thu Jan  1 09:41:11 2026,https://reurl.cc/k8QOXb,reurl.cc/k8qoxb,shortener_or_redirect_domain_host,pending,,,,,
 16,reurl.cc,[新聞] Meta 強化打詐防線，移除 780 萬則鎖定台灣的詐騙廣告,https://www.ptt.cc/bbs/Bunco/M.1766576351.A.BF7.html,Wed Dec 24 19:39:06 2025,https://reurl.cc/EbW8vg,reurl.cc/ebw8vg,shortener_or_redirect_domain_host,pending,,,,,
