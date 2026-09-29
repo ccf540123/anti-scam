@@ -275,4 +275,5 @@ if line_enabled:
 
 if __name__ == "__main__":
     rag_searcher.update_ptt_database()
-    app.run(debug=True)
+    # macOS AirPlay 常占用 5000，改用 5001 避免瀏覽器出現 403
+    app.run(debug=True, port=5001)

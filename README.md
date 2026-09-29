@@ -57,11 +57,12 @@ python3 app.py
 瀏覽器打開：
 
 ```text
-http://127.0.0.1:5000
+http://127.0.0.1:5001
 ```
 
 貼上可疑文字或網址，按「開始分析」即可。
 
+> 使用 `5001` 是為了避開 macOS AirPlay 常占用的 `5000` port。  
 > Website 模式不需要 ngrok。
 
 ## 🌐 LINE Bot（可選）
@@ -69,10 +70,10 @@ http://127.0.0.1:5000
 
 1. 填好 `LINE_CHANNEL_SECRET` 與 `LINE_CHANNEL_ACCESS_TOKEN`
 2. 啟動 Flask
-3. 再用 ngrok 把本機 5000 port 暴露出去：
+3. 再用 ngrok 把本機 5001 port 暴露出去：
 
 ```bash
-ngrok http 5000
+ngrok http 5001
 ```
 
 把 ngrok 的 `https://.../callback` 貼到 LINE Developers 的 Webhook URL。
