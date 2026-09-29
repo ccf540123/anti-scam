@@ -6,8 +6,8 @@ from bs4 import BeautifulSoup
 from crawlers.base import Article  # 確保路徑正確
 
 PTT_HEADERS = {"User-Agent": "Mozilla/5.0", "Cookie": "over18=1"}
-DEFAULT_BOARDS = ["Bunco"]#,"Gossiping", "WomenTalk", "e-shopping", "creditcard", "Stock"]
-DEFAULT_KEYWORDS = ["詐騙"]#, "被騙", "投資詐騙", "交友詐騙", "假客服", "釣魚網站"]
+DEFAULT_BOARDS = ["Bunco","Gossiping", "WomenTalk", "e-shopping", "creditcard", "Stock"]
+DEFAULT_KEYWORDS = ["詐騙", "被騙", "投資詐騙", "交友詐騙", "假客服", "釣魚網站"]
 
 def crawl_ptt_article(url):
     try:

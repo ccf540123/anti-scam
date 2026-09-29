@@ -10,4 +10,4 @@
 
   注意：不要把 Gemini API Key 寫在這個檔案。
 */
-window.API_BASE_URL = "";
+window.API_BASE_URL = "https://anti-scam-line-bot.onrender.com";
