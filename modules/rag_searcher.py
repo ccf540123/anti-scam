@@ -41,9 +41,9 @@ def update_ptt_database():
 def _save_to_csv(articles, filename):
     with open(filename, "w", newline="", encoding="utf-8-sig") as file:
         writer = csv.writer(file)
-        writer.writerow(["title", "url", "content", "source"])
+        writer.writerow(["title", "url", "content", "source", "published_at"])
         for art in articles:
-            writer.writerow([art.title, art.url, art.content, art.source])
+            writer.writerow([art.title, art.url, art.content, art.source, art.published_at])
 
 def search_related_cases(user_text, top_k=2):
     """
