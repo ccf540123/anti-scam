@@ -64,22 +64,38 @@
       font-weight: 700;
     }
 
-    textarea {
+    textarea,
+    input[type="file"] {
       width: 100%;
+      font: inherit;
+      color: var(--ink);
+    }
+
+    textarea {
       min-height: 180px;
       resize: vertical;
       padding: 14px 16px;
       border: 1px solid var(--border);
       border-radius: 12px;
-      font: inherit;
       line-height: 1.6;
-      color: var(--ink);
       background: #fcfefd;
     }
 
     textarea:focus {
       outline: 2px solid rgba(15, 107, 76, 0.35);
       border-color: var(--accent);
+    }
+
+    .file-box {
+      margin-top: 20px;
+      padding: 14px 16px;
+      border: 1px dashed var(--border);
+      border-radius: 12px;
+      background: #fcfefd;
+    }
+
+    .file-box label {
+      margin-bottom: 8px;
     }
 
     .actions {
@@ -98,16 +114,19 @@
       cursor: pointer;
     }
 
-    #checkBtn {
+    #checkBtn,
+    #checkImageBtn {
       background: var(--accent);
       color: white;
     }
 
-    #checkBtn:hover {
+    #checkBtn:hover,
+    #checkImageBtn:hover {
       background: var(--accent-hover);
     }
 
-    #checkBtn:disabled {
+    #checkBtn:disabled,
+    #checkImageBtn:disabled {
       opacity: 0.65;
       cursor: wait;
     }
@@ -155,7 +174,7 @@
 <body>
   <main>
     <h1>反詐騙檢測助手</h1>
-    <p class="lead">貼上可疑網址或完整訊息，系統會用 165 黑名單與 AI 幫你評估風險。</p>
+    <p class="lead">貼上可疑網址、完整訊息，或上傳截圖，系統會用 165 黑名單與 AI 幫你評估風險。</p>
 
     <section class="panel">
       <label for="userText">可疑內容</label>
@@ -164,26 +183,42 @@
         placeholder="例如：請立即點擊 https://example.com 完成驗證，否則帳戶將被停用"
       ></textarea>
 
+      <div class="file-box">
+        <label for="userImage">或上傳可疑截圖</label>
+        <input id="userImage" type="file" accept="image/*">
+      </div>
+
       <div class="actions">
-        <button id="checkBtn" type="button">開始分析</button>
+        <button id="checkBtn" type="button">分析文字</button>
+        <button id="checkImageBtn" type="button">分析圖片</button>
         <button id="clearBtn" type="button">清空</button>
       </div>
 
       <p class="result-title">分析結果</p>
       <div id="resultBox">結果會顯示在這裡。</div>
-      <p class="hint">提示：文字太短時，建議貼上完整對話或含有網址的內容，結果會比較準。</p>
+      <p class="hint">提示：文字太短時，建議貼上完整對話；圖片請選對話截圖、簡訊或可疑網頁畫面。</p>
     </section>
   </main>
 
   <script>
     // 先用 querySelector 找到頁面上的元素
     const userText = document.querySelector("#userText");
+    const userImage = document.querySelector("#userImage");
     const checkBtn = document.querySelector("#checkBtn");
+    const checkImageBtn = document.querySelector("#checkImageBtn");
     const clearBtn = document.querySelector("#clearBtn");
     const resultBox = document.querySelector("#resultBox");
 
+    function setLoading(isLoading, message) {
+      checkBtn.disabled = isLoading;
+      checkImageBtn.disabled = isLoading;
+      if (isLoading) {
+        resultBox.className = "is-loading";
+        resultBox.textContent = message;
+      }
+    }
+
     // fetch：用 JavaScript 向後端送資料，並等待回應
-    // 這裡會把文字送到 /api/check，後端分析完再回傳結果
     async function checkText() {
       const text = userText.value.trim();
 
@@ -193,9 +228,7 @@
         return;
       }
 
-      checkBtn.disabled = true;
-      resultBox.className = "is-loading";
-      resultBox.textContent = "分析中，請稍候...";
+      setLoading(true, "文字分析中，請稍候...");
 
       try {
         const response = await fetch("/api/check", {
@@ -214,13 +247,47 @@
         resultBox.textContent = "無法連線到伺服器，請確認 Flask 是否正在執行。";
       }
 
-      checkBtn.disabled = false;
+      setLoading(false);
+    }
+
+    // FormData：專門用來上傳檔案（圖片）給後端
+    async function checkImage() {
+      const file = userImage.files[0];
+
+      if (!file) {
+        resultBox.className = "is-error";
+        resultBox.textContent = "請先選擇一張圖片。";
+        return;
+      }
+
+      setLoading(true, "圖片分析中，請稍候...");
+
+      try {
+        const formData = new FormData();
+        formData.append("image", file);
+
+        const response = await fetch("/api/check-image", {
+          method: "POST",
+          body: formData
+        });
+
+        const data = await response.json();
+        resultBox.className = "";
+        resultBox.textContent = data.result;
+      } catch (error) {
+        resultBox.className = "is-error";
+        resultBox.textContent = "無法連線到伺服器，請確認 Flask 是否正在執行。";
+      }
+
+      setLoading(false);
     }
 
     checkBtn.addEventListener("click", checkText);
+    checkImageBtn.addEventListener("click", checkImage);
 
     clearBtn.addEventListener("click", function () {
       userText.value = "";
+      userImage.value = "";
       resultBox.className = "";
       resultBox.textContent = "結果會顯示在這裡。";
       userText.focus();

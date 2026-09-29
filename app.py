@@ -161,6 +161,23 @@ def analyze_user_text(user_text):
     return "收到您的訊息！這段文字較短，且目前未偵測到高風險特徵。如果這是某個陌生事件的開頭，後續要求匯款或點連結時請務必提高警覺。"
 
 
+def analyze_user_image(image_bytes):
+    """
+    核心影像分析：輸入圖片的 bytes，回傳風險評估文字。
+    Website 上傳圖片與 LINE 收到的圖片，最後都走這裡。
+    """
+    global current_key_index
+
+    if not image_bytes:
+        return "請先選擇一張圖片再開始分析。"
+
+    print(f"📥 圖片準備送往 image_checker，大小: {len(image_bytes)} bytes")
+    ai_analysis_result, current_key_index = image_checker.check_image_scam_with_ai(
+        image_bytes, API_KEYS, current_key_index
+    )
+    return f"🤖 【AI 影像詐騙風險分析結果】\n\n{ai_analysis_result}"
+
+
 def reply_line_text(event, reply_text):
     """把文字結果回傳到 LINE 聊天室。"""
     from linebot.v3.messaging import (
@@ -210,6 +227,30 @@ def api_check():
         }), 500
 
 
+@app.route("/api/check-image", methods=['POST'])
+def api_check_image():
+    """
+    網頁上傳圖片後會打到這裡。
+    前端用 FormData 送來欄位名稱 image 的檔案。
+    """
+    if "image" not in request.files:
+        return jsonify({"result": "請先選擇一張圖片再開始分析。"}), 400
+
+    image_file = request.files["image"]
+    if not image_file or image_file.filename == "":
+        return jsonify({"result": "請先選擇一張圖片再開始分析。"}), 400
+
+    try:
+        image_bytes = image_file.read()
+        result = analyze_user_image(image_bytes)
+        return jsonify({"result": result})
+    except Exception:
+        traceback.print_exc()
+        return jsonify({
+            "result": "⚠️ 系統訊息：抱歉，處理圖片時發生非預期錯誤，請確保圖片內容清晰。"
+        }), 500
+
+
 # =========================
 # LINE Bot 路由（有憑證才啟用）
 # =========================
@@ -241,7 +282,6 @@ if line_enabled:
 
     @handler.add(MessageEvent, message=ImageMessageContent)
     def handle_image_message(event):
-        global current_key_index
         print(f"\n📸 收到使用者傳送圖片 (ID: {event.message.id})，啟動多模態反詐騙分析...")
 
         try:
@@ -254,13 +294,7 @@ if line_enabled:
                 else:
                     image_bytes = b"".join([chunk for chunk in image_content])
 
-            print(f"📥 圖片下載成功，大小: {len(image_bytes)} bytes，準備送往 image_checker 模組...")
-
-            ai_analysis_result, current_key_index = image_checker.check_image_scam_with_ai(
-                image_bytes, API_KEYS, current_key_index
-            )
-
-            reply_text = f"🤖 【AI 影像詐騙風險分析結果】\n\n{ai_analysis_result}"
+            reply_text = analyze_user_image(image_bytes)
 
         except Exception:
             print("❌ 圖片處理流程內部發生錯誤！詳細 Traceback 如下：")
