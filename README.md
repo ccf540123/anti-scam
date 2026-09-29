@@ -68,24 +68,46 @@ http://127.0.0.1:5001
 
 ### A. 部署 Flask Backend 到 Render
 
-1. 到 [Render](https://render.com/) 註冊並連線你的 GitHub
-2. New → Web Service → 選擇這個 repo
-3. 設定：
-   - **Runtime**：Python
-   - **Build Command**：`pip install -r requirements.txt`
-   - **Start Command**：`gunicorn app:app --bind 0.0.0.0:$PORT --timeout 120`
-4. Environment 新增：
+專案已附 `render.yaml`，可用兩種方式：
+
+#### 方法一：Blueprint（建議）
+
+1. 到 [Render Dashboard](https://dashboard.render.com/)
+2. **New → Blueprint**
+3. 連線 GitHub，選 repo：`anti-scam-LINE-bot`，branch：`main`
+4. Render 會讀取 `render.yaml`
+5. 填入環境變數（金鑰只在這裡填，不要放到 GitHub）：
    - `GEMINI_API_KEY_1`
    - `GEMINI_API_KEY_2`（可選）
    - `GEMINI_API_KEY_3`（可選）
-   - `FRONTEND_ORIGIN` = 你的 GitHub Pages 網址  
-     例如 `https://ccf540123.github.io`  
-     或 `https://ccf540123.github.io/anti-scam-LINE-bot`
-5. 部署完成後，記下後端網址，例如：
+6. Apply / Create
+7. 部署完成後，記下後端網址，例如：
    `https://anti-scam-api.onrender.com`
-6. 可用瀏覽器打開：
-   `https://anti-scam-api.onrender.com/api/health`  
-   看到 `{"status":"ok"}` 代表成功
+
+#### 方法二：手動 Web Service
+
+1. **New → Web Service**
+2. 選 repo：`anti-scam-LINE-bot`，branch：`main`
+3. 填這些欄位：
+   - **Name**：`anti-scam-api`
+   - **Language / Runtime**：`Python 3`
+   - **Build Command**：`pip install -r requirements.txt`
+   - **Start Command**：`gunicorn app:app --bind 0.0.0.0:$PORT --timeout 120`
+   - **Instance type**：Free
+4. **Environment** 新增：
+   - `GEMINI_API_KEY_1` = 你的金鑰
+   - `GEMINI_API_KEY_2` =（可選）
+   - `GEMINI_API_KEY_3` =（可選）
+   - `FRONTEND_ORIGIN` = `https://ccf540123.github.io`
+5. Create Web Service
+
+部署後測試：
+
+```text
+https://你的服務名.onrender.com/api/health
+```
+
+看到 `{"status":"ok"}` 代表成功。
 
 > Render 免費方案一段時間沒人用可能會睡著，第一次開啟可能要等十幾秒。
 
