@@ -1,0 +1,56 @@
+{
+  "ptt_csv": "ptt_scam_cases.csv",
+  "ptt_article_count": 20,
+  "articles_with_url": 18,
+  "total_extracted_urls": 21,
+  "random_seed": 42,
+  "source_176455_csv": "data/raw/NPA_WEBURL_20260930.csv",
+  "source_176455_unique_hosts": 75625,
+  "176455_exact_url_rows": 0,
+  "176455_fuzzy_url_rows": 3,
+  "176455_fuzzy_shortener_rows": 3,
+  "176455_fuzzy_domain_related_rows": 0,
+  "176455_non_match_articles": 17,
+  "176455_exact_sample_rows": 0,
+  "176455_fuzzy_review_rows": 3,
+  "176455_non_match_sample_rows": 2,
+  "176455_articles_exact": [],
+  "176455_articles_fuzzy": [
+    "https://www.ptt.cc/bbs/Bunco/M.1778568846.A.071.html",
+    "https://www.ptt.cc/bbs/Bunco/M.1779496262.A.FBC.html",
+    "https://www.ptt.cc/bbs/Bunco/M.1780049324.A.589.html"
+  ],
+  "source_160055_csv": "data/raw/NPA_FAKE_INVEST_20260930.csv",
+  "source_160055_unique_hosts": 30263,
+  "160055_match_url_rows": 0,
+  "160055_match_articles": 0,
+  "160055_articles": [],
+  "overlap_extracted_url_pairs": {
+    "only_176455": 3,
+    "only_160055": 0,
+    "both": 0
+  },
+  "overlap_articles": {
+    "only_176455": 3,
+    "only_160055": 0,
+    "both": 0,
+    "only_176455_urls": [
+      "https://www.ptt.cc/bbs/Bunco/M.1778568846.A.071.html",
+      "https://www.ptt.cc/bbs/Bunco/M.1779496262.A.FBC.html",
+      "https://www.ptt.cc/bbs/Bunco/M.1780049324.A.589.html"
+    ],
+    "only_160055_urls": [],
+    "both_urls": []
+  },
+  "normalization_notes": {
+    "176455": "PTT URL → strip punct, lower, strip www., host / host+path; Exact = host or host_path in 網域 index; Fuzzy = shortener host OR subdomain OR registrable_domain overlap",
+    "160055": "Separate rules for 網址 field: strip punct, add http if missing, lower, strip www., host / host+path. Match reasons A–D only; no Exact/Fuzzy labels; shortener hosts are NOT auto-matched."
+  },
+  "output_files": [
+    "data/review/run_20260930_dual_source/176455_exact_matches.csv",
+    "data/review/run_20260930_dual_source/176455_fuzzy_matches_review.csv",
+    "data/review/run_20260930_dual_source/176455_non_matches_sample.csv",
+    "data/review/run_20260930_dual_source/160055_matches.csv"
+  ],
+  "note": "Blacklists are NOT merged. Previous data/review/*.csv files are left unchanged. No scam/non-scam labels assigned."
+}
