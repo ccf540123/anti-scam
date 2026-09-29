@@ -1,0 +1,12 @@
+{
+  "dataset_name": "165反詐騙諮詢專線_遭停止解析涉詐網站",
+  "official_filename": "NPA_WEBURL.csv",
+  "snapshot_filename": "NPA_WEBURL_20260929.csv",
+  "download_date": "2026-09-29",
+  "download_datetime_utc": "2026-09-29T19:45:00Z",
+  "api_url": "https://opdadm.moi.gov.tw/api/v1/no-auth/resource/api/dataset/29E8E643-88ED-4952-B21E-BD42A3B7108C/resource/FCAF44C5-978E-405D-BCCB-4FCF16DF7D25/download",
+  "data_gov_page": "https://data.gov.tw/dataset/176455",
+  "provider": "內政部警政署",
+  "license": "政府資料開放授權條款-第1版",
+  "notes": "本快照保留官方原始五欄，未做 normalization 或欄位刪除。未覆蓋專案根目錄 scam_165_urls.csv。"
+}
