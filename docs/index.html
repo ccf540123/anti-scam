@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>反詐騙檢測助手</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main>
+    <h1>反詐騙檢測助手</h1>
+    <p class="lead">貼上可疑網址、完整訊息，或上傳截圖，系統會用 165 黑名單與 AI 幫你評估風險。</p>
+
+    <section class="panel">
+      <label for="userText">可疑內容</label>
+      <textarea
+        id="userText"
+        placeholder="例如：請立即點擊 https://example.com 完成驗證，否則帳戶將被停用"
+      ></textarea>
+
+      <div class="file-box">
+        <label for="userImage">或上傳可疑截圖</label>
+        <input id="userImage" type="file" accept="image/*">
+      </div>
+
+      <div class="actions">
+        <button id="checkBtn" type="button">分析文字</button>
+        <button id="checkImageBtn" type="button">分析圖片</button>
+        <button id="clearBtn" type="button">清空</button>
+      </div>
+
+      <p class="result-title">分析結果</p>
+      <div id="resultBox">結果會顯示在這裡。</div>
+      <p class="hint">提示：文字太短時，建議貼上完整對話；圖片請選對話截圖、簡訊或可疑網頁畫面。</p>
+    </section>
+  </main>
+
+  <!-- config.js 先載入，裡面只有 API 網址，沒有任何 API Key -->
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
