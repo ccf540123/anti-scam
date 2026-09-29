@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fuzzy 人工檢視工具（77 筆）</title>
+<style>
+  :root {
+    --bg: #f3efe6;
+    --card: #fffdf8;
+    --ink: #1d1a16;
+    --muted: #6b645a;
+    --line: #ddd4c5;
+    --accent: #0f6a5a;
+    --accent-2: #c45c26;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "PingFang TC", "Noto Sans TC", "Helvetica Neue", sans-serif;
+    background:
+      radial-gradient(circle at 10% 0%, #efe4cf 0%, transparent 40%),
+      radial-gradient(circle at 90% 10%, #d9ebe4 0%, transparent 35%),
+      var(--bg);
+    color: var(--ink);
+    min-height: 100vh;
+  }
+  .wrap { max-width: 820px; margin: 0 auto; padding: 1.25rem 1rem 3rem; }
+  h1 { font-size: 1.45rem; margin: 0 0 0.35rem; }
+  .sub { color: var(--muted); margin-bottom: 1rem; }
+  .toolbar {
+    display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center;
+    margin-bottom: 1rem;
+  }
+  .progress {
+    flex: 1 1 180px;
+    background: #e8e1d4; border-radius: 999px; height: 10px; overflow: hidden;
+  }
+  .progress > span {
+    display: block; height: 100%; width: 0%; background: var(--accent);
+    transition: width .2s ease;
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 1.1rem 1.15rem 1.25rem;
+    box-shadow: 0 10px 30px rgba(40, 30, 10, 0.06);
+  }
+  .id { font-size: 0.85rem; color: var(--accent-2); font-weight: 700; letter-spacing: 0.04em; }
+  .title { font-size: 1.15rem; margin: 0.35rem 0 0.75rem; line-height: 1.35; }
+  .meta { color: var(--muted); font-size: 0.92rem; margin-bottom: 0.85rem; }
+  .links { display: flex; flex-wrap: wrap; gap: 0.55rem; margin-bottom: 1rem; }
+  a.btn, button {
+    appearance: none; border: 1px solid var(--line); background: #fff;
+    color: var(--ink); border-radius: 10px; padding: 0.55rem 0.85rem;
+    font: inherit; cursor: pointer; text-decoration: none; display: inline-flex;
+    align-items: center; gap: 0.35rem;
+  }
+  a.btn.primary, button.primary {
+    background: var(--accent); color: #fff; border-color: var(--accent);
+  }
+  a.btn:hover, button:hover { filter: brightness(0.98); }
+  label { display: block; font-size: 0.9rem; margin: 0.7rem 0 0.3rem; font-weight: 600; }
+  select, textarea, input[type="text"] {
+    width: 100%; font: inherit; padding: 0.55rem 0.65rem;
+    border-radius: 10px; border: 1px solid var(--line); background: #fff;
+  }
+  textarea { min-height: 70px; resize: vertical; }
+  .nav {
+    display: flex; justify-content: space-between; gap: 0.5rem; margin-top: 1.1rem;
+  }
+  .footer-actions {
+    display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem;
+  }
+  .tip {
+    margin-top: 1rem; color: var(--muted); font-size: 0.9rem;
+    border-left: 3px solid var(--accent-2); padding-left: 0.7rem;
+  }
+  .status { font-size: 0.9rem; color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Fuzzy 短網址人工檢視</h1>
+  <p class="sub">共 77 筆。用下拉選單填，進度會自動存在這個瀏覽器。填完可匯出 CSV。</p>
+
+  <div class="toolbar">
+    <div class="progress" aria-hidden="true"><span id="bar"></span></div>
+    <span class="status" id="statusText">0 / 77 已填</span>
+  </div>
+
+  <div class="card">
+    <div class="id" id="idLabel">#1 / 77</div>
+    <h2 class="title" id="title">...</h2>
+    <div class="meta" id="meta"></div>
+    <div class="links">
+      <a class="btn primary" id="openShort" href="#" target="_blank" rel="noopener">開短網址（看導到哪）</a>
+      <a class="btn" id="openArticle" href="#" target="_blank" rel="noopener">開 PTT 文章</a>
+    </div>
+
+    <label for="destination_opened">有沒有成功打開目的地？</label>
+    <select id="destination_opened">
+      <option value="">（尚未選擇）</option>
+      <option value="yes">yes - 有打開</option>
+      <option value="no">no - 打不開</option>
+      <option value="skip">skip - 先跳過</option>
+    </select>
+
+    <label for="destination_type">目的地類型</label>
+    <select id="destination_type">
+      <option value="">（尚未選擇）</option>
+      <option value="新聞">新聞</option>
+      <option value="政府或防詐宣導">政府或防詐宣導</option>
+      <option value="社群平台">社群平台</option>
+      <option value="疑似詐騙站">疑似詐騙站</option>
+      <option value="短網址失效">短網址失效</option>
+      <option value="其他">其他</option>
+      <option value="不確定">不確定</option>
+    </select>
+
+    <label for="is_scam_related_destination">目的地是否與詐騙相關？</label>
+    <select id="is_scam_related_destination">
+      <option value="">（尚未選擇）</option>
+      <option value="yes">yes</option>
+      <option value="no">no</option>
+      <option value="unsure">unsure</option>
+    </select>
+
+    <label for="human_notes">備註（可空白）</label>
+    <textarea id="human_notes" placeholder="例如：導到某新聞網站、已失效…"></textarea>
+
+    <label for="reviewer">檢視者</label>
+    <input id="reviewer" type="text" placeholder="例如：dingwei">
+
+    <div class="nav">
+      <button type="button" id="prevBtn">上一筆</button>
+      <button type="button" class="primary" id="nextBtn">存檔並下一筆</button>
+    </div>
+  </div>
+
+  <div class="footer-actions">
+    <button type="button" class="primary" id="exportBtn">匯出已填 CSV</button>
+    <button type="button" id="jumpBtn">跳到下一筆未填</button>
+  </div>
+  <p class="tip">提示：答案會自動存在瀏覽器 localStorage。換電腦或清掉網站資料會不見，所以階段性請按「匯出已填 CSV」，把檔案存回專案資料夾覆蓋或另存。</p>
+</div>
+
+<script>
+const ITEMS = [{"review_id": 1, "shortener_host": "pse.is", "title": "[新聞] 拒絕旁觀！網路詐騙通報查詢網展現公私協", "article_url": "https://www.ptt.cc/bbs/Bunco/M.1785642415.A.270.html", "published_at": "Sun Aug  2 11:46:50 2026", "extracted_url": "https://pse.is/9erwbk", "normalized_url": "pse.is/9erwbk"}, {"review_id": 2, "shortener_host": "pse.is", "title": "[新聞] 拒絕旁觀！網路詐騙通報查詢網展現公私協", "article_url": "https://www.ptt.cc/bbs/Bunco/M.1785642415.A.270.html", "published_at": "Sun Aug  2 11:46:50 2026", "extracted_url": "https://pse.is/9erwg9", "normalized_url": "pse.is/9erwg9"}, {"review_id": 3, "shortener_host": "reurl.cc", "title": "[新聞] 租屋詐騙新變種破解 3招破解假房東", "article_url": "https://www.ptt.cc/bbs/Bunco/M.1780049324.A.589.html", "published_at": "Fri May 29 18:08:40 2026", "extracted_url": "https://reurl.cc/Q2kM2o", "normalized_url": "reurl.cc/q2km2o"}, {"review_id": 4, "shortener_host": "reurl.cc", "title": "[新聞] 今年84％詐騙案都Meta平台！打詐中心4方", "article_url": "https://www.ptt.cc/bbs/Bunco/M.1779496262.A.FBC.html", "published_at": "Sat May 23 08:30:58 2026", "extracted_url": "https://reurl.cc/epoVnM", "normalized_url": "reurl.cc/epovnm"}, {"review_id": 5, "shortener_host": "reurl.cc", "title": "[資訊] 發票中獎詐騙郵件頻傳，別點擊信中假連結", "article_url": "https://www.ptt.cc/bbs/Bunco/M.1779427842.A.E21.html", "published_at": "Fri May 22 13:30:37 2026", "extracted_url": "https://reurl.cc/bdoEj6", "normalized_url": "reurl.cc/bdoej6"}, {"review_id": 6, "shortener_host": "reurl.cc", "title": "[新聞] 假寄鞋真寄卡 男子險淪詐騙人頭戶", "article_url": "https://www.ptt.cc/bbs/Bunco/M.1778568846.A.071.html", "published_at": "Tue May 12 14:54:03 2026", "extracted_url": "https://reurl.cc/2avldm", "normalized_url": "reurl.cc/2avldm"}, {"review_id": 7, "shortener_host": "reurl.cc", "title": "[新聞] 經濟部攜手4大超商 詐騙包裹退貨率逾6成", "article_url": "https://www.ptt.cc/bbs/Bunco/M.1774923118.A.A23.html", "published_at": "Tue Mar 31 10:11:51 2026", "extracted_url": "https://reurl.cc/DxXDj6", "normalized_url": "reurl.cc/dxxdj6"}, {"review_id": 8, "shortener_host": "reurl.cc", "title": "[資訊] 歐告娃娃的一頁式詐騙廣告 請勿上當", "article_url": "https://www.ptt.cc/bbs/Bunco/M.1773639786.A.C63.html", "published_at": "Mon Mar 16 13:43:02 2026", "extracted_url": "https://reurl.cc/mpqaLl", "normalized_url": "reurl.cc/mpqall"}, {"review_id": 9, "shortener_host": "reurl.cc", "title": "[資訊] 歐告娃娃的一頁式詐騙廣告 請勿上當", "article_url": "https://www.ptt.cc/bbs/Bunco/M.1773639786.A.C63.html", "published_at": "Mon Mar 16 13:43:02 2026", "extracted_url": "https://reurl.cc/dpVRxM", "normalized_url": "reurl.cc/dpvrxm"}, {"review_id": 10, "shortener_host": "reurl.cc", "title": "[新聞] AI生成垃圾 詐騙集團詐騙個資收廣告費", "article_url": "https://www.ptt.cc/bbs/Bunco/M.1773109123.A.820.html", "published_at": "Tue Mar 10 10:18:40 2026", "extracted_url": "https://reurl.cc/dp0okM", "normalized_url": "reurl.cc/dp0okm"}, {"review_id": 11, "shortener_host": "reurl.cc", "title": "[新聞] 羅浮宮爆門票詐騙！內鬼聯手導遊10年削3.8億 警方逮9人", "article_url": "https://www.ptt.cc/bbs/Bunco/M.1771176569.A.966.html", "published_at": "Mon Feb 16 01:29:27 2026", "extracted_url": "https://reurl.cc/qKQXVg", "normalized_url": "reurl.cc/qkqxvg"}, {"review_id": 12, "shortener_host": "reurl.cc", "title": "[新聞] 手機號碼外洩慘噴2萬多塊？最新詐騙手法", "article_url": "https://www.ptt.cc/bbs/Bunco/M.1770092645.A.0FC.html", "published_at": "Tue Feb  3 12:24:02 2026", "extracted_url": "https://reurl.cc/zKdjvV", "normalized_url": "reurl.cc/zkdjvv"}, {"review_id": 13, "shortener_host": "reurl.cc", "title": "[新聞] 詐騙橫行 全台上萬超商成重災區", "article_url": "https://www.ptt.cc/bbs/Bunco/M.1770092371.A.A87.html", "published_at": "Tue Feb  3 12:19:11 2026", "extracted_url": "https://reurl.cc/GG3R1Z", "normalized_url": "reurl.cc/gg3r1z"}, {"review_id": 14, "shortener_host": "reurl.cc", "title": "[新聞] 情侶檔涉組詐騙機房被通緝 警強勢攻堅", "article_url": "https://www.ptt.cc/bbs/Bunco/M.1769177362.A.21F.html", "published_at": "Fri Jan 23 22:09:19 2026", "extracted_url": "https://reurl.cc/Eb0QzA", "normalized_url": "reurl.cc/eb0qza"}, {"review_id": 15, "shortener_host": "reurl.cc", "title": "[新聞] 刑事局追出14家物流與中詐騙合作 附清單", "article_url": "https://www.ptt.cc/bbs/Bunco/M.1767231674.A.886.html", "published_at": "Thu Jan  1 09:41:11 2026", "extracted_url": "https://reurl.cc/k8QOXb", "normalized_url": "reurl.cc/k8qoxb"}, {"review_id": 16, "shortener_host": "reurl.cc", "title": "[新聞] Meta 強化打詐防線，移除 780 萬則鎖定台灣的詐騙廣告", "article_url": "https://www.ptt.cc/bbs/Bunco/M.1766576351.A.BF7.html", "published_at": "Wed Dec 24 19:39:06 2025", "extracted_url": "https://reurl.cc/EbW8vg", "normalized_url": "reurl.cc/ebw8vg"}, {"review_id": 17, "shortener_host": "reurl.cc", "title": "[新聞] 誤信投資詐騙賺2000賠200萬 「會計復仇」", "article_url": "https://www.ptt.cc/bbs/Bunco/M.1765870626.A.ED4.html", "published_at": "Tue Dec 16 15:37:02 2025", "extracted_url": "https://reurl.cc/ZlNkYV", "normalized_url": "reurl.cc/zlnkyv"}, {"review_id": 18, "shortener_host": "reurl.cc", "title": "[新聞] 台灣成「詐騙練兵場」？志祺七七教三招", "article_url": "https://www.ptt.cc/bbs/Bunco/M.1764665135.A.17C.html", "published_at": "Tue Dec  2 16:45:30 2025", "extracted_url": "https://reurl.cc/qKrY8y", "normalized_url": "reurl.cc/qkry8y"}, {"review_id": 19, "shortener_host": "reurl.cc", "title": "[新聞] 加密貨幣 ATM 機成詐騙新工具：2.8 萬網", "article_url": "https://www.ptt.cc/bbs/Bunco/M.1764143729.A.86E.html", "published_at": "Wed Nov 26 15:55:26 2025", "extracted_url": "https://reurl.cc/laD5gd", "normalized_url": "reurl.cc/lad5gd"}, {"review_id": 20, "shortener_host": "reurl.cc", "title": "[新聞] 處理詐騙案律師遭詐上千萬元 專家揭示三", "article_url": "https://www.ptt.cc/bbs/Bunco/M.1764142879.A.519.html", "published_at": "Wed Nov 26 15:41:13 2025", "extracted_url": "https://reurl.cc/eVDEqK", "normalized_url": "reurl.cc/evdeqk"}, {"review_id": 21, "shortener_host": "reurl.cc", "title": "[資訊] 假冒NCC詐騙，威脅斷訊恐為詐騙", "article_url": "https://www.ptt.cc/bbs/Bunco/M.1763761896.A.8C0.html", "published_at": "Sat Nov 22 05:51:31 2025", "extracted_url": "https://reurl.cc/W8qydx", "normalized_url": "reurl.cc/w8qydx"}, {"review_id": 22, "shortener_host": "reurl.cc", "title": "[新聞] 凱基金員工勾結詐騙盜取3億元匯出海外", "article_url": "https://www.ptt.cc/bbs/Bunco/M.1763520343.A.C2C.html", "published_at": "Wed Nov 19 10:45:39 2025", "extracted_url": "https://reurl.cc/MMNN0n", "normalized_url": "reurl.cc/mmnn0n"}, {"review_id": 23, "shortener_host": "reurl.cc", "title": "[新聞] 涉勾結詐騙集團洩密起訴 網紅「仙塔律師", "article_url": "https://www.ptt.cc/bbs/Bunco/M.1763420914.A.71D.html", "published_at": "Tue Nov 18 07:08:31 2025", "extracted_url": "https://reurl.cc/LQmgba", "normalized_url": "reurl.cc/lqmgba"}, {"review_id": 24, "shortener_host": "reurl.cc", "title": "[新聞] 倫敦詐騙犯因價值55億英鎊被判入獄", "article_url": "https://www.ptt.cc/bbs/Bunco/M.1762922329.A.7E7.html", "published_at": "Wed Nov 12 12:38:44 2025", "extracted_url": "https://reurl.cc/ORk6Q7", "normalized_url": "reurl.cc/ork6q7"}, {"review_id": 25, "shortener_host": "reurl.cc", "title": "[新聞] 倫敦詐騙犯因價值55億英鎊被判入獄", "article_url": "https://www.ptt.cc/bbs/Bunco/M.1762922329.A.7E7.html", "published_at": "Wed Nov 12 12:38:44 2025", "extracted_url": "https://reurl.cc/QV6q65", "normalized_url": "reurl.cc/qv6q65"}, {"review_id": 26, "shortener_host": "reurl.cc", "title": "[新聞] 太子集團跨國詐騙，10家銀行被金檢！", "article_url": "https://www.ptt.cc/bbs/Bunco/M.1762922225.A.59F.html", "published_at": "Wed Nov 12 12:36:59 2025", "extracted_url": "https://reurl.cc/nl5pp1", "normalized_url": "reurl.cc/nl5pp1"}, {"review_id": 27, "shortener_host": "reurl.cc", "title": "[新聞] 外媒爆：Meta 一年從詐騙廣告可賺 160 億", "article_url": "https://www.ptt.cc/bbs/Bunco/M.1762601065.A.39D.html", "published_at": "Sat Nov  8 19:24:21 2025", "extracted_url": "https://reurl.cc/Ebn2G0", "normalized_url": "reurl.cc/ebn2g0"}, {"review_id": 28, "shortener_host": "reurl.cc", "title": "[新聞] Meta打詐不力？傳內部估10%營收來自詐騙", "article_url": "https://www.ptt.cc/bbs/Bunco/M.1762480865.A.A68.html", "published_at": "Fri Nov  7 10:01:01 2025", "extracted_url": "https://reurl.cc/R96Dgn", "normalized_url": "reurl.cc/r96dgn"}, {"review_id": 29, "shortener_host": "reurl.cc", "title": "[新聞] 詐騙帝國崩壞！價值45億豪宅名車全被扣", "article_url": "https://www.ptt.cc/bbs/Bunco/M.1762480758.A.054.html", "published_at": "Fri Nov  7 09:59:15 2025", "extracted_url": "https://reurl.cc/la0XME", "normalized_url": "reurl.cc/la0xme"}, {"review_id": 30, "shortener_host": "reurl.cc", "title": "[新聞] 詐騙園區又逮32台人 柬掃蕩百日抓3千人", "article_url": "https://www.ptt.cc/bbs/Bunco/M.1762394715.A.C82.html", "published_at": "Thu Nov  6 10:05:12 2025", "extracted_url": "https://reurl.cc/la0VjA", "normalized_url": "reurl.cc/la0vja"}, {"review_id": 31, "shortener_host": "reurl.cc", "title": "[新聞] 陷普發詐騙 台北婦接一通電話被騙300萬", "article_url": "https://www.ptt.cc/bbs/Bunco/M.1762394545.A.4A2.html", "published_at": "Thu Nov  6 10:02:22 2025", "extracted_url": "https://reurl.cc/xKgZ4z", "normalized_url": "reurl.cc/xkgz4z"}, {"review_id": 32, "shortener_host": "reurl.cc", "title": "[新聞] 又是賣貨便假連結！買88元提拉米蘇遭詐騙", "article_url": "https://www.ptt.cc/bbs/Bunco/M.1762288056.A.D50.html", "published_at": "Wed Nov  5 04:27:33 2025", "extracted_url": "https://reurl.cc/vK1EXl", "normalized_url": "reurl.cc/vk1exl"}, {"review_id": 33, "shortener_host": "reurl.cc", "title": "[新聞] 4千萬被詐騙1／奈米醫材美子公司股利泡湯", "article_url": "https://www.ptt.cc/bbs/Bunco/M.1761965208.A.CE5.html", "published_at": "Sat Nov  1 10:46:44 2025", "extracted_url": "https://reurl.cc/zK8bRp", "normalized_url": "reurl.cc/zk8brp"}, {"review_id": 34, "shortener_host": "reurl.cc", "title": "[新聞] 土城警攜手銀行築防線 成功攔阻逾億詐騙", "article_url": "https://www.ptt.cc/bbs/Bunco/M.1761726712.A.EC8.html", "published_at": "Wed Oct 29 16:31:48 2025", "extracted_url": "https://reurl.cc/zKg0NQ", "normalized_url": "reurl.cc/zkg0nq"}, {"review_id": 35, "shortener_host": "reurl.cc", "title": "[新聞] KK詐騙園區被軍政府攻佔，背後涉華人黑幫", "article_url": "https://www.ptt.cc/bbs/Bunco/M.1761079575.A.DB3.html", "published_at": "Wed Oct 22 04:46:08 2025", "extracted_url": "https://reurl.cc/Ln9dVX", "normalized_url": "reurl.cc/ln9dvx"}, {"review_id": 36, "shortener_host": "reurl.cc", "title": "[新聞] 柬埔寨詐騙園區多家公司突解散！現場曝光", "article_url": "https://www.ptt.cc/bbs/Bunco/M.1760614482.A.6CF.html", "published_at": "Thu Oct 16 19:34:37 2025", "extracted_url": "https://reurl.cc/1OyZWW", "normalized_url": "reurl.cc/1oyzww"}, {"review_id": 37, "shortener_host": "reurl.cc", "title": "[資訊] 您已中獎載具須歸戶填個資？小心詐騙", "article_url": "https://www.ptt.cc/bbs/Bunco/M.1760603597.A.763.html", "published_at": "Thu Oct 16 16:33:13 2025", "extracted_url": "https://reurl.cc/GNWd2G", "normalized_url": "reurl.cc/gnwd2g"}, {"review_id": 38, "shortener_host": "reurl.cc", "title": "[資訊] 您已中獎載具須歸戶填個資？小心詐騙", "article_url": "https://www.ptt.cc/bbs/Bunco/M.1760603597.A.763.html", "published_at": "Thu Oct 16 16:33:13 2025", "extracted_url": "https://reurl.cc/GNWdWZ", "normalized_url": "reurl.cc/gnwdwz"}, {"review_id": 39, "shortener_host": "reurl.cc", "title": "[新聞] 柬埔寨詐騙組織遭美起訴 9台灣公司被制裁", "article_url": "https://www.ptt.cc/bbs/Bunco/M.1760493916.A.88D.html", "published_at": "Wed Oct 15 10:05:13 2025", "extracted_url": "https://reurl.cc/oYnyO5", "normalized_url": "reurl.cc/oynyo5"}, {"review_id": 40, "shortener_host": "reurl.cc", "title": "[新聞] 破獲詐騙集團假投資虛擬貨幣查扣逾千萬", "article_url": "https://www.ptt.cc/bbs/Bunco/M.1758231085.A.DFA.html", "published_at": "Fri Sep 19 05:31:21 2025", "extracted_url": "https://reurl.cc/89VER4", "normalized_url": "reurl.cc/89ver4"}, {"review_id": 41, "shortener_host": "reurl.cc", "title": "[新聞] 韓媒：台灣成詐騙集團試驗場 年騙500億", "article_url": "https://www.ptt.cc/bbs/Bunco/M.1758230705.A.B58.html", "published_at": "Fri Sep 19 05:25:00 2025", "extracted_url": "https://reurl.cc/Nxov9e", "normalized_url": "reurl.cc/nxov9e"}, {"review_id": 42, "shortener_host": "reurl.cc", "title": "[新聞] 地球村負責人涉詐騙3000萬 找黑幫打人", "article_url": "https://www.ptt.cc/bbs/Bunco/M.1758230603.A.CB2.html", "published_at": "Fri Sep 19 05:23:13 2025", "extracted_url": "https://reurl.cc/ekoRAb", "normalized_url": "reurl.cc/ekorab"}, {"review_id": 43, "shortener_host": "tinyurl.com", "title": "Fw: [閒聊] FB看不到留言 疑似新型詐騙手法", "article_url": "https://www.ptt.cc/bbs/Bunco/M.1757062125.A.161.html", "published_at": "Fri Sep  5 16:48:44 2025", "extracted_url": "https://tinyurl.com/2epvz3bz", "normalized_url": "tinyurl.com/2epvz3bz"}, {"review_id": 44, "shortener_host": "reurl.cc", "title": "[新聞] 無法辨識舊詐騙手法，AI 瀏覽器或成罪犯的好夥伴", "article_url": "https://www.ptt.cc/bbs/Bunco/M.1755962559.A.2AA.html", "published_at": "Sat Aug 23 23:22:37 2025", "extracted_url": "https://reurl.cc/2QQ7d9", "normalized_url": "reurl.cc/2qq7d9"}, {"review_id": 45, "shortener_host": "reurl.cc", "title": "[新聞] 無法辨識舊詐騙手法，AI 瀏覽器或成罪犯的好夥伴", "article_url": "https://www.ptt.cc/bbs/Bunco/M.1755962559.A.2AA.html", "published_at": "Sat Aug 23 23:22:37 2025", "extracted_url": "https://reurl.cc/jrrVnL", "normalized_url": "reurl.cc/jrrvnl"}, {"review_id": 46, "shortener_host": "reurl.cc", "title": "[新聞] FBI也沒轍！美國女子高球成詐騙溫床 「視訊冒充運動員」爽宰", "article_url": "https://www.ptt.cc/bbs/Bunco/M.1755520191.A.939.html", "published_at": "Mon Aug 18 20:29:48 2025", "extracted_url": "https://reurl.cc/axZR6Y", "normalized_url": "reurl.cc/axzr6y"}, {"review_id": 47, "shortener_host": "reurl.cc", "title": "[新聞] 接到1通電話快掛斷！詐騙新招「假冒台水", "article_url": "https://www.ptt.cc/bbs/Bunco/M.1755465894.A.D10.html", "published_at": "Mon Aug 18 05:24:50 2025", "extracted_url": "https://reurl.cc/Qa56rb", "normalized_url": "reurl.cc/qa56rb"}, {"review_id": 48, "shortener_host": "reurl.cc", "title": "[新聞] 新型行事曆詐騙 青壯族中招率高過長者", "article_url": "https://www.ptt.cc/bbs/Bunco/M.1755009538.A.819.html", "published_at": "Tue Aug 12 22:38:55 2025", "extracted_url": "https://reurl.cc/QaRVab", "normalized_url": "reurl.cc/qarvab"}, {"review_id": 49, "shortener_host": "reurl.cc", "title": "[新聞] 騙光5億元！越南建案「大規模詐騙」　重複銷售又假授權", "article_url": "https://www.ptt.cc/bbs/Bunco/M.1754055940.A.CC6.html", "published_at": "Fri Aug  1 21:45:37 2025", "extracted_url": "https://reurl.cc/0WEGAo", "normalized_url": "reurl.cc/0wegao"}, {"review_id": 50, "shortener_host": "reurl.cc", "title": "[新聞] 遊戲點數易成詐騙溫床　業者：強化金流備援風控", "article_url": "https://www.ptt.cc/bbs/Bunco/M.1753271865.A.F18.html", "published_at": "Wed Jul 23 19:57:42 2025", "extracted_url": "https://reurl.cc/pY1xRe", "normalized_url": "reurl.cc/py1xre"}, {"review_id": 51, "shortener_host": "reurl.cc", "title": "[新聞] 詐騙新招！女大生被騙走27萬 醫師也上當", "article_url": "https://www.ptt.cc/bbs/Bunco/M.1753257853.A.64A.html", "published_at": "Wed Jul 23 16:04:10 2025", "extracted_url": "https://reurl.cc/WOrd3x", "normalized_url": "reurl.cc/word3x"}, {"review_id": 52, "shortener_host": "reurl.cc", "title": "[新聞] 最新LINE詐騙手法曝光！ 錯過1事救不回", "article_url": "https://www.ptt.cc/bbs/Bunco/M.1752923486.A.96F.html", "published_at": "Sat Jul 19 19:11:23 2025", "extracted_url": "https://reurl.cc/yAe0QO", "normalized_url": "reurl.cc/yae0qo"}, {"review_id": 53, "shortener_host": "reurl.cc", "title": "[新聞] 找小孩暑期活動注意 彰化女遇投資詐騙損", "article_url": "https://www.ptt.cc/bbs/Bunco/M.1752901687.A.9D9.html", "published_at": "Sat Jul 19 13:08:04 2025", "extracted_url": "https://reurl.cc/rY1nvy", "normalized_url": "reurl.cc/ry1nvy"}, {"review_id": 54, "shortener_host": "reurl.cc", "title": "[資訊] 疑似詐騙包裹勿領 脆上小七店員整理名單", "article_url": "https://www.ptt.cc/bbs/Bunco/M.1752848226.A.CF5.html", "published_at": "Fri Jul 18 22:17:02 2025", "extracted_url": "https://reurl.cc/qY1pAg", "normalized_url": "reurl.cc/qy1pag"}, {"review_id": 55, "shortener_host": "reurl.cc", "title": "[資訊] 疑似詐騙包裹勿領 脆上小七店員整理名單", "article_url": "https://www.ptt.cc/bbs/Bunco/M.1752848226.A.CF5.html", "published_at": "Fri Jul 18 22:17:02 2025", "extracted_url": "https://reurl.cc/Qa62AZ", "normalized_url": "reurl.cc/qa62az"}, {"review_id": 56, "shortener_host": "reurl.cc", "title": "[新聞] 6000人上當！烏拉圭「牛債券」騙局 70萬頭幽靈牛詐騙百億元", "article_url": "https://www.ptt.cc/bbs/Bunco/M.1752846405.A.527.html", "published_at": "Fri Jul 18 21:46:42 2025", "extracted_url": "https://reurl.cc/qY1pGR", "normalized_url": "reurl.cc/qy1pgr"}, {"review_id": 57, "shortener_host": "reurl.cc", "title": "[新聞] 最大宗詐騙案 蘇有朋、李登輝愛女都栽了", "article_url": "https://www.ptt.cc/bbs/Bunco/M.1752716849.A.568.html", "published_at": "Thu Jul 17 09:47:26 2025", "extracted_url": "https://reurl.cc/0Wjbml", "normalized_url": "reurl.cc/0wjbml"}, {"review_id": 58, "shortener_host": "reurl.cc", "title": "[新聞] 防止「愛情詐騙」 約會網站試行人臉辨識安全功能", "article_url": "https://www.ptt.cc/bbs/Bunco/M.1752335730.A.B59.html", "published_at": "Sat Jul 12 23:55:26 2025", "extracted_url": "https://reurl.cc/A3g8le", "normalized_url": "reurl.cc/a3g8le"}, {"review_id": 59, "shortener_host": "reurl.cc", "title": "[新聞] 「一頁式詐騙」氾濫鎖定年輕人　新北警籲", "article_url": "https://www.ptt.cc/bbs/Bunco/M.1752218276.A.0DF.html", "published_at": "Fri Jul 11 15:17:53 2025", "extracted_url": "https://reurl.cc/WOLZmL", "normalized_url": "reurl.cc/wolzml"}, {"review_id": 60, "shortener_host": "reurl.cc", "title": "[新聞] 慘遭熟人詐騙 買境外保單虧千萬", "article_url": "https://www.ptt.cc/bbs/Bunco/M.1752184889.A.A77.html", "published_at": "Fri Jul 11 06:01:26 2025", "extracted_url": "https://reurl.cc/7VoEay", "normalized_url": "reurl.cc/7voeay"}, {"review_id": 61, "shortener_host": "reurl.cc", "title": "[新聞] 486先生提醒 防詐騙就要避開人性最大弱點", "article_url": "https://www.ptt.cc/bbs/Bunco/M.1751875433.A.5B1.html", "published_at": "Mon Jul  7 16:03:51 2025", "extracted_url": "https://reurl.cc/Nxa3lx", "normalized_url": "reurl.cc/nxa3lx"}, {"review_id": 62, "shortener_host": "reurl.cc", "title": "[網路] 網路接案插畫家分享，防止三方詐騙經驗", "article_url": "https://www.ptt.cc/bbs/Bunco/M.1751859754.A.33F.html", "published_at": "Mon Jul  7 11:42:31 2025", "extracted_url": "https://reurl.cc/OmbW3r", "normalized_url": "reurl.cc/ombw3r"}, {"review_id": 63, "shortener_host": "reurl.cc", "title": "[新聞] 又是黃金詐騙！台中小吃攤父女抵押4間房", "article_url": "https://www.ptt.cc/bbs/Bunco/M.1751708207.A.0B5.html", "published_at": "Sat Jul  5 17:36:44 2025", "extracted_url": "https://reurl.cc/Mz7MMn", "normalized_url": "reurl.cc/mz7mmn"}, {"review_id": 64, "shortener_host": "reurl.cc", "title": "[新聞] 假冒公權力！新加坡爆「假官員」詐騙潮　半年騙走1.5億台幣", "article_url": "https://www.ptt.cc/bbs/Bunco/M.1751685999.A.37C.html", "published_at": "Sat Jul  5 11:26:36 2025", "extracted_url": "https://reurl.cc/2Q46O9", "normalized_url": "reurl.cc/2q46o9"}, {"review_id": 65, "shortener_host": "reurl.cc", "title": "[新聞] 暑假親子免費體驗活動廣告？引至LINE詐騙", "article_url": "https://www.ptt.cc/bbs/Bunco/M.1751242895.A.4C9.html", "published_at": "Mon Jun 30 08:21:31 2025", "extracted_url": "https://reurl.cc/gRg8Np", "normalized_url": "reurl.cc/grg8np"}, {"review_id": 66, "shortener_host": "reurl.cc", "title": "[新聞] 一週19億蒸發！最新詐騙手法曝 樓下鄰居", "article_url": "https://www.ptt.cc/bbs/Bunco/M.1751226114.A.CFF.html", "published_at": "Mon Jun 30 03:41:50 2025", "extracted_url": "https://reurl.cc/DqN6GQ", "normalized_url": "reurl.cc/dqn6gq"}, {"review_id": 67, "shortener_host": "reurl.cc", "title": "[新聞] 「要命」感情詐騙！烏克蘭士兵與網戀女約見面　險遭炸死", "article_url": "https://www.ptt.cc/bbs/Bunco/M.1751093227.A.74E.html", "published_at": "Sat Jun 28 14:47:03 2025", "extracted_url": "https://reurl.cc/nmWglv", "normalized_url": "reurl.cc/nmwglv"}, {"review_id": 68, "shortener_host": "reurl.cc", "title": "[新聞] 打擊詐騙 刑事局LINE合作停權7.3萬異常帳", "article_url": "https://www.ptt.cc/bbs/Bunco/M.1750946070.A.E8E.html", "published_at": "Thu Jun 26 21:54:26 2025", "extracted_url": "https://reurl.cc/paQLlQ", "normalized_url": "reurl.cc/paqllq"}, {"review_id": 69, "shortener_host": "reurl.cc", "title": "[新聞] 求職變詐騙 宜警迅速逮捕車手", "article_url": "https://www.ptt.cc/bbs/Bunco/M.1750859344.A.3C9.html", "published_at": "Wed Jun 25 21:49:01 2025", "extracted_url": "https://reurl.cc/VYKVGZ", "normalized_url": "reurl.cc/vykvgz"}, {"review_id": 70, "shortener_host": "reurl.cc", "title": "[新聞] 假借12強紀念幣詐騙！央行點名4個關鍵字", "article_url": "https://www.ptt.cc/bbs/Bunco/M.1750812047.A.7CB.html", "published_at": "Wed Jun 25 08:40:44 2025", "extracted_url": "https://reurl.cc/VYKYYy", "normalized_url": "reurl.cc/vykyyy"}, {"review_id": 71, "shortener_host": "reurl.cc", "title": "[新聞] 假出金集團詐騙逾157億 查出2律師涉案", "article_url": "https://www.ptt.cc/bbs/Bunco/M.1750776540.A.BA3.html", "published_at": "Tue Jun 24 22:48:57 2025", "extracted_url": "https://reurl.cc/xNdvEZ", "normalized_url": "reurl.cc/xndvez"}, {"review_id": 72, "shortener_host": "reurl.cc", "title": "[新聞] 辦英國旅遊憑證誤上詐騙網 機場刷1萬4", "article_url": "https://www.ptt.cc/bbs/Bunco/M.1750686630.A.703.html", "published_at": "Mon Jun 23 21:50:27 2025", "extracted_url": "https://reurl.cc/xNn5Rb", "normalized_url": "reurl.cc/xnn5rb"}, {"review_id": 73, "shortener_host": "reurl.cc", "title": "[新聞] 暑假打工注意！詐騙話術曝 這3字最難察覺", "article_url": "https://www.ptt.cc/bbs/Bunco/M.1750649361.A.84C.html", "published_at": "Mon Jun 23 11:29:17 2025", "extracted_url": "https://reurl.cc/eM1ZRj", "normalized_url": "reurl.cc/em1zrj"}, {"review_id": 74, "shortener_host": "reurl.cc", "title": "[新聞] 假檢警詐騙6成6被害人逾50歲 平均財損282萬元居冠", "article_url": "https://www.ptt.cc/bbs/Bunco/M.1750524092.A.D3B.html", "published_at": "Sun Jun 22 00:41:28 2025", "extracted_url": "https://reurl.cc/4LZoj3", "normalized_url": "reurl.cc/4lzoj3"}, {"review_id": 75, "shortener_host": "reurl.cc", "title": "[新聞] 帝寶貴婦涉多起詐騙 營造商再控連騙4億", "article_url": "https://www.ptt.cc/bbs/Bunco/M.1750425782.A.220.html", "published_at": "Fri Jun 20 21:22:59 2025", "extracted_url": "https://reurl.cc/NYVj55", "normalized_url": "reurl.cc/nyvj55"}, {"review_id": 76, "shortener_host": "reurl.cc", "title": "[新聞] 數發部新一週詐騙態樣 電商近期被冒用", "article_url": "https://www.ptt.cc/bbs/Bunco/M.1750293750.A.393.html", "published_at": "Thu Jun 19 08:42:27 2025", "extracted_url": "https://reurl.cc/8DKo8g", "normalized_url": "reurl.cc/8dko8g"}, {"review_id": 77, "shortener_host": "reurl.cc", "title": "[新聞] 欠50元停車費遭詐19萬！女星再遇詐騙", "article_url": "https://www.ptt.cc/bbs/Bunco/M.1750212929.A.BCB.html", "published_at": "Wed Jun 18 10:15:24 2025", "extracted_url": "https://reurl.cc/nma3rd", "normalized_url": "reurl.cc/nma3rd"}];
+const STORAGE_KEY = "fuzzy_manual_review_v1";
+
+function loadAnswers() {
+  try {
+    return JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+  } catch (e) {
+    return {};
+  }
+}
+
+function saveAnswers(answers) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(answers));
+}
+
+let index = 0;
+let answers = loadAnswers();
+
+const els = {
+  bar: document.getElementById("bar"),
+  statusText: document.getElementById("statusText"),
+  idLabel: document.getElementById("idLabel"),
+  title: document.getElementById("title"),
+  meta: document.getElementById("meta"),
+  openShort: document.getElementById("openShort"),
+  openArticle: document.getElementById("openArticle"),
+  destination_opened: document.getElementById("destination_opened"),
+  destination_type: document.getElementById("destination_type"),
+  is_scam_related_destination: document.getElementById("is_scam_related_destination"),
+  human_notes: document.getElementById("human_notes"),
+  reviewer: document.getElementById("reviewer"),
+};
+
+function isFilled(ans) {
+  if (!ans) return false;
+  return !!(ans.destination_opened || ans.destination_type || ans.is_scam_related_destination);
+}
+
+function filledCount() {
+  let n = 0;
+  for (const item of ITEMS) {
+    if (isFilled(answers[String(item.review_id)])) n += 1;
+  }
+  return n;
+}
+
+function updateProgress() {
+  const n = filledCount();
+  const pct = Math.round((n / ITEMS.length) * 100);
+  els.bar.style.width = pct + "%";
+  els.statusText.textContent = n + " / " + ITEMS.length + " 已填";
+}
+
+function currentId() {
+  return String(ITEMS[index].review_id);
+}
+
+function collectForm() {
+  return {
+    destination_opened: els.destination_opened.value,
+    destination_type: els.destination_type.value,
+    is_scam_related_destination: els.is_scam_related_destination.value,
+    human_notes: els.human_notes.value.trim(),
+    reviewer: els.reviewer.value.trim(),
+    review_status: (
+      els.destination_opened.value ||
+      els.destination_type.value ||
+      els.is_scam_related_destination.value
+    ) ? "reviewed" : "pending",
+  };
+}
+
+function persistCurrent() {
+  answers[currentId()] = collectForm();
+  saveAnswers(answers);
+  updateProgress();
+}
+
+function render() {
+  const item = ITEMS[index];
+  els.idLabel.textContent = "#" + item.review_id + " / " + ITEMS.length;
+  els.title.textContent = item.title;
+  els.meta.textContent =
+    "短網址商：" + item.shortener_host +
+    (item.published_at ? " ｜ 發文：" + item.published_at : "");
+  els.openShort.href = item.extracted_url;
+  els.openArticle.href = item.article_url;
+
+  const ans = answers[String(item.review_id)] || {};
+  els.destination_opened.value = ans.destination_opened || "";
+  els.destination_type.value = ans.destination_type || "";
+  els.is_scam_related_destination.value = ans.is_scam_related_destination || "";
+  els.human_notes.value = ans.human_notes || "";
+  // keep reviewer sticky across items if empty on this item
+  els.reviewer.value = ans.reviewer || els.reviewer.value || "";
+  updateProgress();
+}
+
+function csvEscape(value) {
+  const s = String(value == null ? "" : value);
+  if (/[",\n\r]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+  return s;
+}
+
+function exportCsv() {
+  persistCurrent();
+  const headers = [
+    "review_id","shortener_host","title","article_url","published_at",
+    "extracted_url","normalized_url","match_reason","review_status",
+    "destination_opened","destination_type","is_scam_related_destination",
+    "human_notes","reviewer"
+  ];
+  const lines = [headers.join(",")];
+  for (const item of ITEMS) {
+    const ans = answers[String(item.review_id)] || {};
+    const row = [
+      item.review_id,
+      item.shortener_host,
+      item.title,
+      item.article_url,
+      item.published_at,
+      item.extracted_url,
+      item.normalized_url,
+      "shortener_or_redirect_domain_host",
+      ans.review_status || "pending",
+      ans.destination_opened || "",
+      ans.destination_type || "",
+      ans.is_scam_related_destination || "",
+      ans.human_notes || "",
+      ans.reviewer || "",
+    ].map(csvEscape);
+    lines.push(row.join(","));
+  }
+  const blob = new Blob(["\ufeff" + lines.join("\n")], { type: "text/csv;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "176455_fuzzy_manual_review.csv";
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+document.getElementById("prevBtn").addEventListener("click", function () {
+  persistCurrent();
+  index = Math.max(0, index - 1);
+  render();
+});
+
+document.getElementById("nextBtn").addEventListener("click", function () {
+  persistCurrent();
+  if (index < ITEMS.length - 1) {
+    index += 1;
+    render();
+  } else {
+    alert("已經是最後一筆。可以按「匯出已填 CSV」。");
+  }
+});
+
+document.getElementById("exportBtn").addEventListener("click", exportCsv);
+
+document.getElementById("jumpBtn").addEventListener("click", function () {
+  persistCurrent();
+  let found = -1;
+  for (let i = 0; i < ITEMS.length; i++) {
+    if (!isFilled(answers[String(ITEMS[i].review_id)])) {
+      found = i;
+      break;
+    }
+  }
+  if (found === -1) {
+    alert("都填過了（至少填了一個下拉選單）。可以匯出 CSV。");
+    return;
+  }
+  index = found;
+  render();
+});
+
+["destination_opened","destination_type","is_scam_related_destination","human_notes","reviewer"].forEach(function (id) {
+  els[id].addEventListener("change", persistCurrent);
+  els[id].addEventListener("input", persistCurrent);
+});
+
+render();
+</script>
+</body>
+</html>
