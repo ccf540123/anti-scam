@@ -281,19 +281,56 @@ def api_review_logout():
     return jsonify({"ok": True})
 
 
+def _review_dataset_id() -> str:
+    raw = (
+        request.args.get("dataset")
+        or (request.get_json(silent=True) or {}).get("dataset")
+        or "fuzzy"
+    )
+    return str(raw).strip() or "fuzzy"
+
+
 @app.route("/api/review/session", methods=["GET"])
 @review_login_required
 def api_review_session():
-    return jsonify({"ok": True, "authenticated": True})
+    return jsonify(
+        {
+            "ok": True,
+            "authenticated": True,
+            "datasets": review_store.list_datasets(),
+        }
+    )
+
+
+@app.route("/api/review/datasets", methods=["GET"])
+@review_login_required
+def api_review_datasets():
+    return jsonify({"datasets": review_store.list_datasets()})
 
 
 @app.route("/api/review/items", methods=["GET"])
 @review_login_required
 def api_review_items():
+    dataset_id = _review_dataset_id()
     try:
-        items = review_store.load_review_items()
-        progress = review_store.progress_stats(items)
-        return jsonify({"items": items, "progress": progress})
+        dataset = review_store.get_dataset(dataset_id)
+    except KeyError as exc:
+        return jsonify({"error": str(exc)}), 400
+    try:
+        items = review_store.load_review_items(dataset_id)
+        progress = review_store.progress_stats(items, dataset_id)
+        return jsonify(
+            {
+                "dataset": {
+                    "id": dataset["id"],
+                    "label": dataset["label"],
+                    "kind": dataset["kind"],
+                    "description": dataset["description"],
+                },
+                "items": items,
+                "progress": progress,
+            }
+        )
     except FileNotFoundError as exc:
         return jsonify({"error": str(exc)}), 404
     except Exception:
@@ -308,9 +345,14 @@ def api_review_save():
     review_id = data.get("review_id")
     if review_id is None or str(review_id).strip() == "":
         return jsonify({"error": "缺少 review_id"}), 400
+    dataset_id = str(data.get("dataset") or "fuzzy").strip() or "fuzzy"
     try:
-        saved = review_store.upsert_answer(str(review_id), data)
-        return jsonify({"ok": True, "answer": saved})
+        review_store.get_dataset(dataset_id)
+    except KeyError as exc:
+        return jsonify({"error": str(exc)}), 400
+    try:
+        saved = review_store.upsert_answer(str(review_id), data, dataset_id)
+        return jsonify({"ok": True, "dataset": dataset_id, "answer": saved})
     except Exception:
         traceback.print_exc()
         return jsonify({"error": "存檔失敗"}), 500
@@ -322,28 +364,17 @@ def api_review_export_csv():
     import csv
     from io import StringIO
 
+    dataset_id = _review_dataset_id()
     try:
-        items = review_store.load_review_items()
+        dataset = review_store.get_dataset(dataset_id)
+        items = review_store.load_review_items(dataset_id)
+    except KeyError as exc:
+        return jsonify({"error": str(exc)}), 400
     except Exception:
         traceback.print_exc()
         return jsonify({"error": "匯出失敗"}), 500
 
-    fieldnames = [
-        "review_id",
-        "shortener_host",
-        "title",
-        "article_url",
-        "published_at",
-        "extracted_url",
-        "normalized_url",
-        "match_reason",
-        "review_status",
-        "destination_opened",
-        "destination_type",
-        "is_scam_related_destination",
-        "human_notes",
-        "reviewer",
-    ]
+    fieldnames = dataset["export_fields"]
     buffer = StringIO()
     writer = csv.DictWriter(buffer, fieldnames=fieldnames, extrasaction="ignore")
     writer.writeheader()
@@ -357,7 +388,7 @@ def api_review_export_csv():
         200,
         {
             "Content-Type": "text/csv; charset=utf-8",
-            "Content-Disposition": "attachment; filename=176455_fuzzy_manual_review.csv",
+            "Content-Disposition": f"attachment; filename={dataset['export_filename']}",
         },
     )
 

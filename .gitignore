@@ -15,3 +15,6 @@ __pycache__/
 *.Zone.Identifier
 data/review/**/fuzzy_manual_answers.json
 data/review/**/fuzzy_manual_answers.json.tmp
+data/review/ptt_candidates/answers.json
+data/review/ptt_candidates/answers.json.tmp
+# 匯入產生的 items 可進版控；本機 answers 不進版控

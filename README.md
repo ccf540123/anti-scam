@@ -165,10 +165,34 @@ FLASK_SECRET_KEY=一長串隨機字串
 
 1. 打開 `/review`
 2. 輸入共同密碼
-3. 通過後才會載入審查資料並可儲存標註
-4. 可隨時匯出 CSV（欄位與原本 fuzzy review 相同）
+3. 在右上角資料集切換：**Fuzzy 候選文章** 或 **PTT 候選文章**
+4. 通過後才會載入審查資料並可儲存標註
+5. 可隨時匯出目前資料集的 CSV
 
 沒有登入時，`/api/review/items`、`/api/review/save`、`/api/review/export.csv` 都會回 401。
+
+### 匯入 PTT 候選到 Review（獨立資料，不覆蓋 Fuzzy）
+
+爬蟲產出的 `ptt_scam_cases.csv` **不會**自動進 Review，也**不會**被匯入腳本修改。  
+請明確指定要匯入的範圍，寫入獨立目錄 `data/review/ptt_candidates/`：
+
+```bash
+# 先匯入少量試看
+python run_import_ptt_review.py --limit 20
+
+# 依看板／關鍵字篩選
+python run_import_ptt_review.py --boards Bunco --keywords 被騙 --limit 50
+
+# 指定 URL 清單（一行一個）
+python run_import_ptt_review.py --urls-file urls.txt
+
+# 明確匯入來源檔全部列
+python run_import_ptt_review.py --all
+```
+
+- Fuzzy 標註仍存在原本的 answers 檔，不會被 PTT 匯入蓋掉
+- PTT 標註存到 `data/review/ptt_candidates/answers.json`，用穩定 `review_id`（由文章 URL 產生）對應
+- 公開檢測與 RAG 仍只讀 `ptt_scam_cases.csv`，不受 Review 影響
 
 ## 更新 PTT 案例 CSV（給 RAG 用）
 
