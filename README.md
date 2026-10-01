@@ -198,6 +198,13 @@ python run_import_ptt_review.py --all
 
 爬蟲輸出 `ptt_scam_cases.csv`。`rag_searcher.py` 會讀取其中的 `title`、`url`、`content`、`source`（多出來的 metadata 欄位可忽略）。
 
+第一階段 Article 1 在爬蟲後預設 `status=temp`。執行 URL cross-reference 後會產生文章層級狀態檔（`ptt_article1_status.csv`）：
+
+- `exact_match`：正文 URL 與官方資料 exact 命中
+- `temp`：尚無 exact（等待人工；**不是** non_match）
+
+Fuzzy（短網址等）仍輸出到既有 Fuzzy Review CSV，與 `temp` / `non_match` 分開。`non_match` 留給之後人工檢查，不會由自動 cross-reference 產生。
+
 看板與關鍵字集中寫在 `crawlers/ptt_crawler.py` 的 `BOARDS`、`KEYWORDS`。  
 日常直接執行即可（不必每次手打參數）：
 

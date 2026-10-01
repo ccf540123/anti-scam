@@ -155,6 +155,7 @@ class TestReviewMultiDataset(unittest.TestCase):
                     "search_keyword",
                     "imported_at",
                     "review_status",
+                    "status",
                     "article_type",
                     "human_notes",
                     "reviewer",

@@ -3,9 +3,13 @@ PTT 文章正文 URL 與兩個官方資料源「分開」cross-reference（研�
 
 資料源（不合併黑名單）：
   1. 176455 — data/raw/NPA_WEBURL_*.csv（遭停止解析涉詐網域）
-     → Exact / Fuzzy / Non-match（沿用既有研究定義）
+     → Exact / Fuzzy（研究用）/ Article 1 temp（無 exact）
   2. 160055 — data/raw/NPA_FAKE_INVEST_*.csv（假投資／博弈週統計）
-     → 僅輸出 matches（不稱為 Exact / Fuzzy / Non-match）
+     → 僅輸出 matches；命中時 Article 1 亦視為 exact_match
+
+Article 1 自動狀態只會是 exact_match 或 temp。
+non_match 不由本自動流程產生。
+Fuzzy Review 流程保留。
 
 不建立 scam / non-scam label，不做人工判斷。
 """
@@ -19,6 +23,11 @@ import random
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
+from scripts.article1_status import (
+    ARTICLE1_STATUS_EXACT_MATCH,
+    ARTICLE1_STATUS_TEMP,
+    classify_article1_status,
+)
 from scripts.ptt_165_cross_reference import (
     DEFAULT_SEED,
     NormalizedUrl,
@@ -29,6 +38,7 @@ from scripts.ptt_165_cross_reference import (
     registrable_domain,
     sample_count,
     strip_trailing_punct,
+    write_article1_status_csv,
     write_csv,
 )
 
@@ -230,8 +240,9 @@ def run_dual_source(
 
     exact_rows: list[UrlMatchRow] = []
     fuzzy_rows: list[UrlMatchRow] = []
-    non_match_articles: list[UrlMatchRow] = []
+    temp_no_url_signal_articles: list[UrlMatchRow] = []
     matches_160055: list[Match160055Row] = []
+    status_by_url: dict[str, dict] = {}
 
     # 用於雙源重疊：以 (article_url, extracted_url) 為鍵
     keys_176455_hit: set[tuple[str, str]] = set()
@@ -242,6 +253,8 @@ def run_dual_source(
 
     articles_with_url = 0
     total_extracted_urls = 0
+    exact_article_count = 0
+    temp_article_count = 0
 
     for article in ptt_rows:
         title = article.get("title") or ""
@@ -254,8 +267,10 @@ def run_dual_source(
             articles_with_url += 1
             total_extracted_urls += len(extracted)
 
-        article_has_exact = False
+        article_has_exact_176455 = False
         article_has_fuzzy = False
+        article_has_160055 = False
+        matched_official = ""
 
         for raw_url in extracted:
             nu_176455 = normalize_extracted_url(raw_url)
@@ -270,8 +285,10 @@ def run_dual_source(
                 keys_176455_hit.add(pair)
                 if matched_176455.match_type == "exact_match":
                     exact_rows.append(matched_176455)
-                    article_has_exact = True
+                    article_has_exact_176455 = True
                     articles_176455_exact.add(article_url)
+                    if not matched_official:
+                        matched_official = matched_176455.matched_165_url
                 elif matched_176455.match_type == "fuzzy_match":
                     fuzzy_rows.append(matched_176455)
                     article_has_fuzzy = True
@@ -304,9 +321,36 @@ def run_dual_source(
                 )
                 keys_160055_hit.add((article_url, raw_url))
                 articles_160055.add(article_url)
+                article_has_160055 = True
+                if not matched_official:
+                    matched_official = hit_160055.get("matched_160055_url", "")
 
-        if not article_has_exact and not article_has_fuzzy:
-            non_match_articles.append(
+        has_exact = article_has_exact_176455 or article_has_160055
+        status = classify_article1_status(has_exact_url_match=has_exact)
+        if status == ARTICLE1_STATUS_EXACT_MATCH:
+            exact_article_count += 1
+            status_reason = "official_url_exact_match"
+        else:
+            temp_article_count += 1
+            if article_has_fuzzy:
+                status_reason = "no_exact_match_has_fuzzy_signal_waiting_human_review"
+            else:
+                status_reason = "no_exact_url_match_waiting_human_review"
+
+        status_by_url[article_url] = {
+            "status": status,
+            "status_reason": status_reason,
+            "has_fuzzy_url_signal": "yes" if article_has_fuzzy else "no",
+            "matched_official_url": matched_official,
+        }
+
+        # 無 176455 exact、無 fuzzy、無 160055 → temp（不是 non_match）
+        if (
+            not article_has_exact_176455
+            and not article_has_fuzzy
+            and not article_has_160055
+        ):
+            temp_no_url_signal_articles.append(
                 UrlMatchRow(
                     title=title,
                     article_url=article_url,
@@ -314,11 +358,8 @@ def run_dual_source(
                     extracted_url="",
                     normalized_url="",
                     matched_165_url="",
-                    match_type="non_match",
-                    match_reason=(
-                        "no exact or fuzzy URL correspondence with 176455 "
-                        "for this article"
-                    ),
+                    match_type=ARTICLE1_STATUS_TEMP,
+                    match_reason="no_exact_url_match_waiting_human_review",
                     review_status="pending",
                 )
             )
@@ -336,27 +377,29 @@ def run_dual_source(
     for row in fuzzy_rows:
         row.random_sample_group = "fuzzy_full_review"
 
-    non_n = len(non_match_articles)
-    non_sample_n = sample_count(non_n, cap=None)
-    if non_n <= non_sample_n:
-        non_sample = non_match_articles
+    temp_n = len(temp_no_url_signal_articles)
+    temp_sample_n = sample_count(temp_n, cap=None)
+    if temp_n <= temp_sample_n:
+        temp_sample = temp_no_url_signal_articles
     else:
-        non_sample = rng.sample(non_match_articles, non_sample_n)
-    for row in non_sample:
-        row.random_sample_group = "non_match_sample"
+        temp_sample = rng.sample(temp_no_url_signal_articles, temp_sample_n)
+    for row in temp_sample:
+        row.random_sample_group = "temp_sample"
 
     out = Path(output_dir)
     out.mkdir(parents=True, exist_ok=True)
 
     exact_path = out / "176455_exact_matches.csv"
     fuzzy_path = out / "176455_fuzzy_matches_review.csv"
-    non_path = out / "176455_non_matches_sample.csv"
+    temp_path = out / "176455_temp_articles_sample.csv"
     path_160055 = out / "160055_matches.csv"
+    article1_path = out / "ptt_article1_status.csv"
 
     write_csv(exact_path, exact_sample, seed)
     write_csv(fuzzy_path, fuzzy_rows, seed)
-    write_csv(non_path, non_sample, seed)
+    write_csv(temp_path, temp_sample, seed)
     write_160055_csv(path_160055, matches_160055, seed)
+    write_article1_status_csv(article1_path, ptt_rows, status_by_url)
 
     only_176455 = keys_176455_hit - keys_160055_hit
     only_160055 = keys_160055_hit - keys_176455_hit
@@ -367,7 +410,6 @@ def run_dual_source(
     articles_only_160055 = articles_160055 - articles_176455_any
     articles_both = articles_176455_any & articles_160055
 
-    # shortener fuzzy 列不算「真命中官方網域」，另計
     fuzzy_shortener = sum(
         1 for r in fuzzy_rows if r.match_reason == "shortener_or_redirect_domain_host"
     )
@@ -385,10 +427,12 @@ def run_dual_source(
         "176455_fuzzy_url_rows": len(fuzzy_rows),
         "176455_fuzzy_shortener_rows": fuzzy_shortener,
         "176455_fuzzy_domain_related_rows": fuzzy_domain,
-        "176455_non_match_articles": non_n,
+        "article1_exact_match_articles": exact_article_count,
+        "article1_temp_articles": temp_article_count,
+        "temp_articles_no_url_signal": temp_n,
         "176455_exact_sample_rows": len(exact_sample),
         "176455_fuzzy_review_rows": len(fuzzy_rows),
-        "176455_non_match_sample_rows": len(non_sample),
+        "temp_sample_rows": len(temp_sample),
         "176455_articles_exact": sorted(articles_176455_exact),
         "176455_articles_fuzzy": sorted(articles_176455_fuzzy),
         "source_160055_csv": csv_160055,
@@ -418,18 +462,24 @@ def run_dual_source(
             "160055": (
                 "Separate rules for 網址 field: strip punct, add http if missing, "
                 "lower, strip www., host / host+path. Match reasons A–D only; "
-                "no Exact/Fuzzy labels; shortener hosts are NOT auto-matched."
+                "counts as Article 1 exact_match; shortener hosts are NOT auto-matched."
+            ),
+            "article1_status": (
+                "exact_match if 176455 exact OR 160055 match; otherwise temp. "
+                "Automatic flow never writes non_match."
             ),
         },
         "output_files": [
             str(exact_path),
             str(fuzzy_path),
-            str(non_path),
+            str(temp_path),
             str(path_160055),
+            str(article1_path),
         ],
         "note": (
-            "Blacklists are NOT merged. Previous data/review/*.csv files are left "
-            "unchanged. No scam/non-scam labels assigned."
+            "Article 1 auto statuses are exact_match|temp only; "
+            "non_match reserved for later human review. "
+            "Fuzzy Review CSV role unchanged. Blacklists are NOT merged."
         ),
     }
 
@@ -442,7 +492,7 @@ def run_dual_source(
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="PTT vs 176455 + 160055 dual-source URL cross-reference"
+        description="PTT vs 176455 + 160055 dual-source URL cross-reference (Article 1)"
     )
     parser.add_argument("--ptt", default="ptt_scam_cases.csv")
     parser.add_argument(
@@ -465,20 +515,23 @@ def main() -> None:
         seed=args.seed,
     )
 
-    print("==== PTT Dual-Source Cross-Reference ====")
+    print("==== PTT Dual-Source Cross-Reference (Article 1) ====")
     for key in (
         "ptt_article_count",
         "articles_with_url",
         "total_extracted_urls",
         "176455_exact_url_rows",
         "176455_fuzzy_url_rows",
-        "176455_non_match_articles",
+        "article1_exact_match_articles",
+        "article1_temp_articles",
+        "temp_articles_no_url_signal",
         "160055_match_url_rows",
         "160055_match_articles",
         "overlap_extracted_url_pairs",
         "overlap_articles",
         "output_files",
         "random_seed",
+        "note",
     ):
         print(f"{key}: {stats[key]}")
 
