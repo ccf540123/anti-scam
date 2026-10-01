@@ -283,6 +283,7 @@
   }
 
   function scheduleSave() {
+    applyLocalFormToItem();
     dirty = true;
     updateProgress();
     if (saveTimer) clearTimeout(saveTimer);
