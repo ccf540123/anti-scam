@@ -50,6 +50,9 @@ def search_related_cases(user_text, top_k=2):
     這裡實作你們的 RAG 檢索邏輯。
     可以是簡單的關鍵字比對 (BM25)，或是用 Embedding 做向量搜尋。
     同時讀取 ptt_scam_cases.csv 與 dcard_scam_cases.csv 來尋找最相似的案例。
+
+    必要欄位：title, url, content, source
+    （CSV 若含 source_board / search_keyword 等額外欄位會被忽略，不影響檢索）
     """
     matched_cases = []
     
@@ -61,11 +64,15 @@ def search_related_cases(user_text, top_k=2):
             for row in reader:
                 # 如果使用者說的話裡面，包含了 CSV 標題裡的某些字
                 # (實際專案建議用向量相似度，這邊示範基本邏輯)
-                if any(kw in row["title"] for kw in ["詐騙", "騙", "投資"] if kw in user_text):
+                title = row.get("title") or ""
+                source = row.get("source") or ""
+                url = row.get("url") or ""
+                content = row.get("content") or ""
+                if any(kw in title for kw in ["詐騙", "騙", "投資"] if kw in user_text):
                     matched_cases.append({
-                        "title": f"[{row['source'].upper()}] {row['title']}",
-                        "url": row["url"],
-                        "content": row["content"]
+                        "title": f"[{source.upper()}] {title}",
+                        "url": url,
+                        "content": content
                     })
                 if len(matched_cases) >= top_k:
                     break

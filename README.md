@@ -139,6 +139,40 @@ https://你的GitHub帳號.github.io/anti-scam-LINE-bot/
 | 正式後端 | Render 自動用 `gunicorn app:app ...` | Render 雲端，不必開筆電 |
 | 正式前端 | GitHub Pages 托管 `docs/` | GitHub，不必開筆電 |
 
+## 更新 PTT 案例 CSV（給 RAG 用）
+
+爬蟲輸出 `ptt_scam_cases.csv`。`rag_searcher.py` 會讀取其中的 `title`、`url`、`content`、`source`（多出來的 metadata 欄位可忽略）。
+
+```bash
+# 保持原本用法（預設看板 Bunco、關鍵字 詐騙）
+python run_ptt_crawl.py \
+  --pages 10 \
+  --keyword 詐騙 \
+  --output ptt_scam_cases.csv
+
+# 多看板、多關鍵字（會執行所有看板 × 關鍵字組合，並依 URL 去重）
+python run_ptt_crawl.py \
+  --boards Bunco e-shopping Bank_Service \
+  --keywords 詐騙 被騙 匯款 \
+  --pages 10 \
+  --output ptt_scam_cases.csv
+
+# 只預覽設定，不實際爬取
+python run_ptt_crawl.py \
+  --boards Bunco e-shopping \
+  --keywords 詐騙 被騙 \
+  --pages 10 \
+  --dry-run
+```
+
+完成後會寫入 CSV，並額外產生 `ptt_scam_cases_summary.json`（不取代 CSV）。
+
+單元測試（不連 PTT）：
+
+```bash
+python -m unittest tests.test_ptt_crawler_multi -v
+```
+
 ## API
 
 - `GET /api/health`：健康檢查
