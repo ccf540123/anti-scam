@@ -26,11 +26,11 @@
         <h1 id="datasetHeading">一筆一筆標註</h1>
       </div>
       <div class="topbar-actions">
-        <label class="dataset-label" for="datasetSelect">資料集</label>
-        <select id="datasetSelect" aria-label="選擇 Review 資料集">
-          <option value="fuzzy">Fuzzy 候選文章</option>
-          <option value="ptt_candidate">PTT 候選文章</option>
-        </select>
+        <div class="dataset-switch" role="group" aria-label="選擇 Review 資料集">
+          <span class="dataset-label">資料集</span>
+          <button type="button" class="dataset-btn active" data-dataset="fuzzy" id="datasetFuzzyBtn">Fuzzy 候選</button>
+          <button type="button" class="dataset-btn" data-dataset="ptt_candidate" id="datasetPttBtn">PTT 候選</button>
+        </div>
         <button id="exportBtn" type="button" class="btn">匯出 CSV</button>
         <button id="logoutBtn" type="button" class="btn ghost">登出</button>
       </div>

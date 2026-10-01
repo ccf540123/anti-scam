@@ -12,7 +12,8 @@
   const humanNotes = document.getElementById("humanNotes");
   const reviewerInput = document.getElementById("reviewerInput");
   const saveStatus = document.getElementById("saveStatus");
-  const datasetSelect = document.getElementById("datasetSelect");
+  const datasetFuzzyBtn = document.getElementById("datasetFuzzyBtn");
+  const datasetPttBtn = document.getElementById("datasetPttBtn");
   const emptyState = document.getElementById("emptyState");
   const reviewMain = document.getElementById("reviewMain");
 
@@ -301,20 +302,27 @@
       return !isFilled(item);
     });
     if (firstEmpty >= 0) index = firstEmpty;
+    syncDatasetButtons();
     showApp();
     render();
   }
 
+  function syncDatasetButtons() {
+    datasetFuzzyBtn.classList.toggle("active", datasetId === "fuzzy");
+    datasetPttBtn.classList.toggle("active", datasetId === "ptt_candidate");
+  }
+
   async function switchDataset(nextId) {
+    if (nextId === datasetId) return;
     if (dirty) {
       const ok = await saveCurrent({ silent: true });
       if (!ok) {
-        datasetSelect.value = datasetId;
+        syncDatasetButtons();
         return;
       }
     }
     datasetId = nextId;
-    datasetSelect.value = datasetId;
+    syncDatasetButtons();
     await loadItems();
   }
 
@@ -348,8 +356,11 @@
     if (event.key === "Enter") loginBtn.click();
   });
 
-  datasetSelect.addEventListener("change", function () {
-    switchDataset(datasetSelect.value);
+  datasetFuzzyBtn.addEventListener("click", function () {
+    switchDataset("fuzzy");
+  });
+  datasetPttBtn.addEventListener("click", function () {
+    switchDataset("ptt_candidate");
   });
 
   logoutBtn.addEventListener("click", async function () {
