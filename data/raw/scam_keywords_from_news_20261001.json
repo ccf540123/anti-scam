@@ -1,0 +1,493 @@
+{
+  "source_csv": "ptt_scam_cases.csv",
+  "source_article_count": 200,
+  "news_info_article_count": 196,
+  "extracted_on": "2026-10-01",
+  "crawl_keywords": [
+    "假投資",
+    "投資詐騙",
+    "虛擬貨幣",
+    "加密貨幣",
+    "釣魚",
+    "一頁式",
+    "假檢警",
+    "假交友",
+    "驗證碼",
+    "博弈",
+    "假客服",
+    "提款卡",
+    "詐騙包裹",
+    "OTP",
+    "比特幣",
+    "交友詐騙",
+    "網購詐騙",
+    "人頭戶",
+    "求職詐騙",
+    "假貸款",
+    "假房東",
+    "租屋詐騙"
+  ],
+  "keyword_meta": [
+    {
+      "keyword": "LINE",
+      "doc_count": 57,
+      "use_for_crawl": false,
+      "reason": "too_generic"
+    },
+    {
+      "keyword": "匯款",
+      "doc_count": 41,
+      "use_for_crawl": false,
+      "reason": "too_generic"
+    },
+    {
+      "keyword": "假投資",
+      "doc_count": 29,
+      "use_for_crawl": true,
+      "reason": "seed_pattern_frequent_in_news"
+    },
+    {
+      "keyword": "投資詐騙",
+      "doc_count": 25,
+      "use_for_crawl": true,
+      "reason": "seed_pattern_frequent_in_news"
+    },
+    {
+      "keyword": "虛擬貨幣",
+      "doc_count": 21,
+      "use_for_crawl": true,
+      "reason": "seed_pattern_frequent_in_news"
+    },
+    {
+      "keyword": "轉帳",
+      "doc_count": 20,
+      "use_for_crawl": false,
+      "reason": "too_generic"
+    },
+    {
+      "keyword": "面交",
+      "doc_count": 17,
+      "use_for_crawl": false,
+      "reason": "too_generic"
+    },
+    {
+      "keyword": "加密貨幣",
+      "doc_count": 14,
+      "use_for_crawl": true,
+      "reason": "seed_pattern_frequent_in_news"
+    },
+    {
+      "keyword": "釣魚",
+      "doc_count": 13,
+      "use_for_crawl": true,
+      "reason": "seed_pattern_frequent_in_news"
+    },
+    {
+      "keyword": "一頁式",
+      "doc_count": 9,
+      "use_for_crawl": true,
+      "reason": "seed_pattern_frequent_in_news"
+    },
+    {
+      "keyword": "假檢警",
+      "doc_count": 9,
+      "use_for_crawl": true,
+      "reason": "seed_pattern_frequent_in_news"
+    },
+    {
+      "keyword": "假交友",
+      "doc_count": 7,
+      "use_for_crawl": true,
+      "reason": "seed_pattern_frequent_in_news"
+    },
+    {
+      "keyword": "驗證碼",
+      "doc_count": 7,
+      "use_for_crawl": true,
+      "reason": "seed_pattern_frequent_in_news"
+    },
+    {
+      "keyword": "博弈",
+      "doc_count": 7,
+      "use_for_crawl": true,
+      "reason": "seed_pattern_frequent_in_news"
+    },
+    {
+      "keyword": "假客服",
+      "doc_count": 6,
+      "use_for_crawl": true,
+      "reason": "seed_pattern_frequent_in_news"
+    },
+    {
+      "keyword": "提款卡",
+      "doc_count": 6,
+      "use_for_crawl": true,
+      "reason": "seed_pattern_frequent_in_news"
+    },
+    {
+      "keyword": "詐騙包裹",
+      "doc_count": 6,
+      "use_for_crawl": true,
+      "reason": "seed_pattern_frequent_in_news"
+    },
+    {
+      "keyword": "OTP",
+      "doc_count": 5,
+      "use_for_crawl": true,
+      "reason": "seed_pattern_frequent_in_news"
+    },
+    {
+      "keyword": "比特幣",
+      "doc_count": 5,
+      "use_for_crawl": true,
+      "reason": "seed_pattern_frequent_in_news"
+    },
+    {
+      "keyword": "交友詐騙",
+      "doc_count": 4,
+      "use_for_crawl": true,
+      "reason": "seed_pattern_frequent_in_news"
+    },
+    {
+      "keyword": "網購詐騙",
+      "doc_count": 4,
+      "use_for_crawl": true,
+      "reason": "seed_pattern_frequent_in_news"
+    },
+    {
+      "keyword": "人頭戶",
+      "doc_count": 3,
+      "use_for_crawl": true,
+      "reason": "seed_pattern_frequent_in_news"
+    },
+    {
+      "keyword": "求職詐騙",
+      "doc_count": 3,
+      "use_for_crawl": true,
+      "reason": "seed_pattern_frequent_in_news"
+    },
+    {
+      "keyword": "deepfake",
+      "doc_count": 2,
+      "use_for_crawl": false,
+      "reason": "below_min_docs"
+    },
+    {
+      "keyword": "租屋詐騙",
+      "doc_count": 2,
+      "use_for_crawl": false,
+      "reason": "below_min_docs"
+    },
+    {
+      "keyword": "辦門號",
+      "doc_count": 2,
+      "use_for_crawl": false,
+      "reason": "below_min_docs"
+    },
+    {
+      "keyword": "假求職",
+      "doc_count": 2,
+      "use_for_crawl": false,
+      "reason": "below_min_docs"
+    },
+    {
+      "keyword": "健保卡",
+      "doc_count": 1,
+      "use_for_crawl": false,
+      "reason": "below_min_docs"
+    },
+    {
+      "keyword": "換臉",
+      "doc_count": 1,
+      "use_for_crawl": false,
+      "reason": "below_min_docs"
+    },
+    {
+      "keyword": "視訊換臉",
+      "doc_count": 1,
+      "use_for_crawl": false,
+      "reason": "below_min_docs"
+    },
+    {
+      "keyword": "假房東",
+      "doc_count": 1,
+      "use_for_crawl": false,
+      "reason": "below_min_docs"
+    },
+    {
+      "keyword": "假退稅",
+      "doc_count": 1,
+      "use_for_crawl": false,
+      "reason": "below_min_docs"
+    },
+    {
+      "keyword": "中獎詐騙",
+      "doc_count": 1,
+      "use_for_crawl": false,
+      "reason": "below_min_docs"
+    },
+    {
+      "keyword": "發票中獎",
+      "doc_count": 1,
+      "use_for_crawl": false,
+      "reason": "below_min_docs"
+    },
+    {
+      "keyword": "假貸款",
+      "doc_count": 1,
+      "use_for_crawl": false,
+      "reason": "below_min_docs"
+    },
+    {
+      "keyword": "美化信用",
+      "doc_count": 1,
+      "use_for_crawl": false,
+      "reason": "below_min_docs"
+    },
+    {
+      "keyword": "假中獎",
+      "doc_count": 1,
+      "use_for_crawl": false,
+      "reason": "below_min_docs"
+    },
+    {
+      "keyword": "加好友",
+      "doc_count": 1,
+      "use_for_crawl": false,
+      "reason": "below_min_docs"
+    },
+    {
+      "keyword": "娛樂城",
+      "doc_count": 1,
+      "use_for_crawl": false,
+      "reason": "below_min_docs"
+    },
+    {
+      "keyword": "USDT",
+      "doc_count": 1,
+      "use_for_crawl": false,
+      "reason": "below_min_docs"
+    },
+    {
+      "keyword": "假貸款",
+      "doc_count": 1,
+      "use_for_crawl": true,
+      "reason": "must_include_for_case_search"
+    },
+    {
+      "keyword": "假房東",
+      "doc_count": 1,
+      "use_for_crawl": true,
+      "reason": "must_include_for_case_search"
+    },
+    {
+      "keyword": "租屋詐騙",
+      "doc_count": 2,
+      "use_for_crawl": true,
+      "reason": "must_include_for_case_search"
+    }
+  ],
+  "observed_title_phrases_not_auto_crawled": [
+    {
+      "phrase": "最新詐騙",
+      "doc_count": 3
+    },
+    {
+      "phrase": "網路詐騙",
+      "doc_count": 2
+    },
+    {
+      "phrase": "假連結",
+      "doc_count": 2
+    },
+    {
+      "phrase": "出金集團詐騙",
+      "doc_count": 2
+    },
+    {
+      "phrase": "假出金集團",
+      "doc_count": 2
+    },
+    {
+      "phrase": "集團跨國詐騙",
+      "doc_count": 2
+    },
+    {
+      "phrase": "感情詐騙",
+      "doc_count": 2
+    },
+    {
+      "phrase": "假檢警詐騙",
+      "doc_count": 2
+    },
+    {
+      "phrase": "柬埔寨詐騙",
+      "doc_count": 2
+    },
+    {
+      "phrase": "破獲詐騙",
+      "doc_count": 2
+    },
+    {
+      "phrase": "大規模詐騙",
+      "doc_count": 2
+    },
+    {
+      "phrase": "社群投資詐騙",
+      "doc_count": 1
+    },
+    {
+      "phrase": "假亂真",
+      "doc_count": 1
+    },
+    {
+      "phrase": "假廣告運動",
+      "doc_count": 1
+    },
+    {
+      "phrase": "埔寨掃盪詐騙",
+      "doc_count": 1
+    },
+    {
+      "phrase": "時代的詐騙",
+      "doc_count": 1
+    },
+    {
+      "phrase": "竹建商遭詐騙",
+      "doc_count": 1
+    },
+    {
+      "phrase": "中國詐騙",
+      "doc_count": 1
+    },
+    {
+      "phrase": "假房東",
+      "doc_count": 1
+    },
+    {
+      "phrase": "租屋詐騙",
+      "doc_count": 1
+    },
+    {
+      "phrase": "商業電郵詐騙",
+      "doc_count": 1
+    },
+    {
+      "phrase": "假退稅通知",
+      "doc_count": 1
+    },
+    {
+      "phrase": "用卡即是詐騙",
+      "doc_count": 1
+    },
+    {
+      "phrase": "發票中獎詐騙",
+      "doc_count": 1
+    },
+    {
+      "phrase": "男子險淪詐騙",
+      "doc_count": 1
+    },
+    {
+      "phrase": "假寄鞋真寄",
+      "doc_count": 1
+    },
+    {
+      "phrase": "疾署斥詐騙",
+      "doc_count": 1
+    },
+    {
+      "phrase": "隊女孩淪詐騙",
+      "doc_count": 1
+    },
+    {
+      "phrase": "詐騙集團詐騙",
+      "doc_count": 1
+    },
+    {
+      "phrase": "月平均詐騙",
+      "doc_count": 1
+    },
+    {
+      "phrase": "假租客",
+      "doc_count": 1
+    },
+    {
+      "phrase": "宮爆門票詐騙",
+      "doc_count": 1
+    },
+    {
+      "phrase": "日本詐騙",
+      "doc_count": 1
+    },
+    {
+      "phrase": "學代辦爆詐騙",
+      "doc_count": 1
+    },
+    {
+      "phrase": "旗號詐騙",
+      "doc_count": 1
+    },
+    {
+      "phrase": "侶檔涉組詐騙",
+      "doc_count": 1
+    },
+    {
+      "phrase": "新型詐騙",
+      "doc_count": 1
+    },
+    {
+      "phrase": "東南亞詐騙",
+      "doc_count": 1
+    },
+    {
+      "phrase": "物流與中詐騙",
+      "doc_count": 1
+    },
+    {
+      "phrase": "一探電信詐騙",
+      "doc_count": 1
+    },
+    {
+      "phrase": "定台灣的詐騙",
+      "doc_count": 1
+    },
+    {
+      "phrase": "工涉投資詐騙",
+      "doc_count": 1
+    },
+    {
+      "phrase": "下交易遇詐騙",
+      "doc_count": 1
+    },
+    {
+      "phrase": "台灣秒遭詐騙",
+      "doc_count": 1
+    },
+    {
+      "phrase": "誤信投資詐騙",
+      "doc_count": 1
+    },
+    {
+      "phrase": "收入默許詐騙",
+      "doc_count": 1
+    },
+    {
+      "phrase": "心靈大師詐騙",
+      "doc_count": 1
+    },
+    {
+      "phrase": "馬防部爆詐騙",
+      "doc_count": 1
+    },
+    {
+      "phrase": "理小紅書詐騙",
+      "doc_count": 1
+    },
+    {
+      "phrase": "集體勾串詐騙",
+      "doc_count": 1
+    }
+  ],
+  "notes": "Step A: count method keywords inside news/PSA Bunco posts. Step B: keep only clean method phrases for re-crawl. Title fragments are observed but not auto-used as search queries. Generic terms (AI/廣告/投資/LINE…) are excluded from crawl."
+}
