@@ -2,11 +2,12 @@
 """
 PTT 看板搜尋爬蟲（研究／RAG 案例資料）。
 
-相容舊用法：
-  python -m crawlers.ptt_crawler --pages 10 --keyword 詐騙 --output ptt_scam_cases.csv
+日常研究用法（使用程式內 BOARDS / KEYWORDS）：
+  python run_ptt_crawl.py
+  python run_ptt_crawl.py --pages 10 --dry-run
 
-多看板 × 多關鍵字：
-  python run_ptt_crawl.py --boards Bunco e-shopping --keywords 詐騙 被騙 --pages 10
+若要臨時覆寫，仍可用 CLI：
+  python run_ptt_crawl.py --boards Bunco --keywords 詐騙 --pages 5
 """
 
 from __future__ import annotations
@@ -30,6 +31,23 @@ PTT_HEADERS = {
     "User-Agent": "Mozilla/5.0 (compatible; anti-scam-research/1.0)",
     "Cookie": "over18=1",
 }
+
+# ---------------------------------------------------------------------------
+# 研究用預設範圍：之後只需改這兩個 list，不必每次打 CLI
+# （直接執行 python run_ptt_crawl.py 就會用這裡的設定）
+# ---------------------------------------------------------------------------
+BOARDS = [
+    "Bunco",
+    "e-shopping",
+    "Bank_Service",
+]
+KEYWORDS = [
+    "詐騙",
+    "被騙",
+    "匯款",
+]
+
+# 給 rag_searcher.update_ptt_database() 等「小量更新」用的單一看板／關鍵字
 DEFAULT_BOARD = "Bunco"
 DEFAULT_KEYWORD = "詐騙"
 DEFAULT_OUTPUT = "ptt_scam_cases.csv"
@@ -474,6 +492,13 @@ def save_articles_to_csv(articles: Iterable[Article], output_path: str) -> None:
 
 
 def parse_boards_and_keywords(args: argparse.Namespace) -> tuple[list[str], list[str]]:
+    """
+    解析看板／關鍵字。
+
+    優先順序：
+      1. CLI 有給 --boards/--board 或 --keywords/--keyword → 用 CLI
+      2. 否則用程式內集中設定的 BOARDS / KEYWORDS
+    """
     boards: list[str] = []
     keywords: list[str] = []
 
@@ -485,13 +510,12 @@ def parse_boards_and_keywords(args: argparse.Namespace) -> tuple[list[str], list
     if getattr(args, "keywords", None):
         keywords.extend(args.keywords)
     if getattr(args, "keyword", None):
-        # 相容舊版：--keyword 可重複；若完全沒給則用預設
         keywords.extend(args.keyword)
 
     if not boards:
-        boards = [DEFAULT_BOARD]
+        boards = list(BOARDS)
     if not keywords:
-        keywords = [DEFAULT_KEYWORD]
+        keywords = list(KEYWORDS)
 
     # 去重但保序
     boards = list(dict.fromkeys([b.strip() for b in boards if b and b.strip()]))
@@ -539,25 +563,25 @@ def main() -> None:
         "--board",
         action="append",
         default=None,
-        help="看板名稱（可重複）；未指定時預設 Bunco",
+        help="臨時覆寫看板（可重複）；未指定時使用程式內 BOARDS",
     )
     parser.add_argument(
         "--boards",
         nargs="+",
         default=None,
-        help="多個看板（空白分隔），例如 --boards Bunco e-shopping",
+        help="臨時覆寫多個看板；未指定時使用程式內 BOARDS",
     )
     parser.add_argument(
         "--keyword",
         action="append",
         default=None,
-        help="搜尋關鍵字（可重複）；未指定時預設 詐騙",
+        help="臨時覆寫關鍵字（可重複）；未指定時使用程式內 KEYWORDS",
     )
     parser.add_argument(
         "--keywords",
         nargs="+",
         default=None,
-        help="多個關鍵字（空白分隔）",
+        help="臨時覆寫多個關鍵字；未指定時使用程式內 KEYWORDS",
     )
     parser.add_argument("--output", default=DEFAULT_OUTPUT, help="輸出 CSV 路徑")
     parser.add_argument(

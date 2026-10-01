@@ -45,8 +45,12 @@ class TestPttCrawlerMulti(unittest.TestCase):
         ns.keywords = None
         ns.keyword = None
         boards, keywords = ptt_crawler.parse_boards_and_keywords(ns)
-        self.assertEqual(boards, ["Bunco"])
-        self.assertEqual(keywords, ["詐騙"])
+        self.assertEqual(boards, list(ptt_crawler.BOARDS))
+        self.assertEqual(keywords, list(ptt_crawler.KEYWORDS))
+        self.assertIn("Bunco", boards)
+        self.assertIn("詐騙", keywords)
+        self.assertIn("被騙", keywords)
+        self.assertIn("匯款", keywords)
 
     def test_legacy_keyword_append_still_works(self):
         ns = MagicMock()

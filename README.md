@@ -174,26 +174,23 @@ FLASK_SECRET_KEY=一長串隨機字串
 
 爬蟲輸出 `ptt_scam_cases.csv`。`rag_searcher.py` 會讀取其中的 `title`、`url`、`content`、`source`（多出來的 metadata 欄位可忽略）。
 
+看板與關鍵字集中寫在 `crawlers/ptt_crawler.py` 的 `BOARDS`、`KEYWORDS`。  
+日常直接執行即可（不必每次手打參數）：
+
 ```bash
-# 保持原本用法（預設看板 Bunco、關鍵字 詐騙）
-python run_ptt_crawl.py \
-  --pages 10 \
-  --keyword 詐騙 \
-  --output ptt_scam_cases.csv
+python run_ptt_crawl.py
+python run_ptt_crawl.py --pages 10
+python run_ptt_crawl.py --dry-run
+```
 
-# 多看板、多關鍵字（會執行所有看板 × 關鍵字組合，並依 URL 去重）
-python run_ptt_crawl.py \
-  --boards Bunco e-shopping Bank_Service \
-  --keywords 詐騙 被騙 匯款 \
-  --pages 10 \
-  --output ptt_scam_cases.csv
+若要臨時覆寫範圍，仍可用 CLI：
 
-# 只預覽設定，不實際爬取
+```bash
 python run_ptt_crawl.py \
-  --boards Bunco e-shopping \
-  --keywords 詐騙 被騙 \
-  --pages 10 \
-  --dry-run
+  --boards Bunco \
+  --keywords 詐騙 \
+  --pages 5 \
+  --output ptt_scam_cases.csv
 ```
 
 完成後會寫入 CSV，並額外產生 `ptt_scam_cases_summary.json`（不取代 CSV）。
