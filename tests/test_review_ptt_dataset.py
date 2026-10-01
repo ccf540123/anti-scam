@@ -326,9 +326,59 @@ class TestReviewMultiDataset(unittest.TestCase):
                     "reviewer": "",
                 }
             )
+        # 即使 answers 殘留舊資料把 status 覆寫成 temp，仍不可進 Temp Review
+        with open(self.ptt_answers, "w", encoding="utf-8") as file:
+            json.dump(
+                {
+                    "ptt_exact_only": {
+                        "content_relevant": "yes",
+                        "url_relevant": "yes",
+                        "keywords": ["不該出現"],
+                        "status": "temp",
+                        "review_status": "reviewed",
+                    }
+                },
+                file,
+                ensure_ascii=False,
+            )
         payload = self.client.get("/api/review/items?dataset=ptt_candidate").get_json()
         ids = {item["review_id"] for item in payload["items"]}
         self.assertNotIn("ptt_exact_only", ids)
+
+    def test_no_relevance_with_keywords_stays_temp_and_complete(self):
+        # 兩邊都無相關，但有手動 Keyword → 可完成，status 維持 temp，Keyword 可匯出
+        items = self.client.get("/api/review/items?dataset=ptt_candidate").get_json()["items"]
+        review_id = items[0]["review_id"]
+        save = self.client.post(
+            "/api/review/save",
+            data=json.dumps(
+                {
+                    "dataset": "ptt_candidate",
+                    "review_id": review_id,
+                    "content_relevant": "no",
+                    "url_relevant": "none",
+                    "keywords": ["後續追查詞"],
+                }
+            ),
+            content_type="application/json",
+        )
+        self.assertEqual(save.status_code, 200)
+        answer = save.get_json()["answer"]
+        self.assertEqual(answer["status"], "temp")
+        self.assertEqual(answer["keywords"], ["後續追查詞"])
+        self.assertEqual(answer["review_status"], "reviewed")
+
+        reloaded = self.client.get("/api/review/items?dataset=ptt_candidate").get_json()
+        item = next(row for row in reloaded["items"] if row["review_id"] == review_id)
+        self.assertEqual(item["status"], "temp")
+        self.assertEqual(item["keywords"], ["後續追查詞"])
+        self.assertEqual(item["review_status"], "reviewed")
+
+        export = self.client.get("/api/review/export.csv?dataset=ptt_candidate")
+        self.assertEqual(export.status_code, 200)
+        text = export.data.decode("utf-8-sig")
+        self.assertIn("後續追查詞", text)
+        self.assertIn("temp", text)
 
     def test_export_includes_keywords_and_status(self):
         items = self.client.get("/api/review/items?dataset=ptt_candidate").get_json()["items"]

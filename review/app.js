@@ -93,6 +93,7 @@
   }
 
   function deriveLocalPttStatus(contentRelevant, urlRelevant, keywords) {
+    // 有手動 Keyword → 一律 temp；僅「兩邊都無相關 + 無 Keyword」→ non_match
     if (keywords && keywords.length) return "temp";
     if (contentRelevant === "no" && (urlRelevant === "no" || urlRelevant === "none")) {
       return "non_match";
@@ -109,6 +110,7 @@
       const keywords = Array.isArray(item.keywords)
         ? item.keywords
         : parseKeywordsText(item.keywords);
+      // 任一為「有」→ 必須有 Keyword；兩邊都無相關時可完成（有 Keyword 仍為 temp）
       if (cr === "yes" || ur === "yes") return keywords.length > 0;
       return true;
     }

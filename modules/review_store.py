@@ -236,9 +236,10 @@ def derive_ptt_article_status(
 ) -> str:
     """
     人工 Review 後的 Article 1 狀態：
-      - 有手動 Keyword → temp（之後可進第二階段）
-      - 確認無可用資訊 → non_match
-      - 尚未完成標註 → temp
+      - 有任何手動 Keyword → 一律 temp（代表仍有後續研究價值）
+      - 內容無相關 + URL 無相關/無連結 + 沒有 Keyword → non_match
+      - 其餘（尚未完成或未確認）→ temp
+    Keyword 只來自組員人工輸入；此函式不抽詞、不推薦。
     """
     cr = (content_relevant or "").strip()
     ur = (url_relevant or "").strip()
@@ -250,7 +251,13 @@ def derive_ptt_article_status(
 
 
 def is_ptt_temp_review_complete(item: dict) -> bool:
-    """完成條件：已選內容／URL 相關性；若任一為「有」則必須手動填至少一個 Keyword。"""
+    """
+    Temp Review 完成條件：
+      - 已選 content_relevant 與 url_relevant
+      - 若任一為「有」→ 必須手動填至少一個 Keyword
+      - 若兩者皆無相關：可完成；此時若有 Keyword，status 仍為 temp，
+        只有完全沒有 Keyword 才會是 non_match
+    """
     cr = (item.get("content_relevant") or "").strip()
     ur = (item.get("url_relevant") or "").strip()
     if not cr or not ur:
@@ -320,12 +327,13 @@ def _load_ptt_candidate_items(path: Path, answers: dict) -> list[dict]:
             review_id = str(row.get("review_id") or "").strip()
             if not review_id:
                 continue
+            # Article 1 / source CSV 的 exact_match 永遠不進 Temp Review。
+            # 必須以原始列為準，不可被 answers 舊資料覆寫成 temp。
+            source_status = (row.get("status") or "temp").strip()
+            if source_status == "exact_match":
+                continue
             answer = answers.get(review_id) or {}
             fields = _merge_answer_fields(row, answer, PTT_ANSWER_FIELDS)
-            # exact_match 不進 Temp Review
-            status = (fields.get("status") or row.get("status") or "temp").strip()
-            if status == "exact_match":
-                continue
             article_url = (row.get("article_url") or "").strip()
             items.append(
                 {
