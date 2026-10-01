@@ -65,6 +65,7 @@ META_CSV_FIELDS = [
     "crawl_time",
     "dedup_key",
     "review_status",
+    "status",  # Article 1：temp / exact_match（non_match 僅人工後）
     "possible_case_type",
 ]
 CSV_FIELDS = RAG_CSV_FIELDS + META_CSV_FIELDS
@@ -281,6 +282,7 @@ def crawl_ptt_search(
                         crawl_time=crawl_time,
                         dedup_key=dedup_key,
                         review_status="unreviewed",
+                        status="temp",
                         possible_case_type=guess_possible_case_type(title, content),
                         author=author,
                     )
@@ -322,6 +324,7 @@ def merge_articles_by_dedup(articles: Iterable[Article]) -> list[Article]:
                 crawl_time=article.crawl_time,
                 dedup_key=key,
                 review_status=article.review_status or "unreviewed",
+                status=article.status or "temp",
                 possible_case_type=article.possible_case_type or "unknown",
                 author=article.author,
             )
@@ -486,6 +489,7 @@ def save_articles_to_csv(articles: Iterable[Article], output_path: str) -> None:
                     "crawl_time": art.crawl_time,
                     "dedup_key": art.dedup_key,
                     "review_status": art.review_status or "unreviewed",
+                    "status": art.status or "temp",
                     "possible_case_type": art.possible_case_type or "unknown",
                 }
             )

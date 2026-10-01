@@ -19,5 +19,8 @@ class Article:
     crawl_time: str = ""
     dedup_key: str = ""
     review_status: str = "unreviewed"
+    # Article 1 研究狀態：爬蟲預設 temp；URL exact 比對後可改為 exact_match
+    # non_match 僅人工後使用，爬蟲／自動 cross-ref 不寫入
+    status: str = "temp"
     possible_case_type: str = "unknown"
     author: str = field(default="", repr=False)

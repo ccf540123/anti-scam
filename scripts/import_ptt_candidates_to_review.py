@@ -38,6 +38,7 @@ ITEM_FIELDS = [
     "search_keyword",
     "imported_at",
     "review_status",
+    "status",
     "article_type",
     "human_notes",
     "reviewer",
@@ -129,6 +130,7 @@ def to_review_item(row: dict, imported_at: str) -> dict:
         "search_keyword": row.get("search_keyword") or "",
         "imported_at": imported_at,
         "review_status": "pending",
+        "status": "temp",  # Article 1：等待人工；不是 non_match / 最終案例
         "article_type": "",
         "human_notes": "",
         "reviewer": "",

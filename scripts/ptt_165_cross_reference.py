@@ -1,10 +1,14 @@
 """
 PTT 文章正文 URL 與 165 黑名單 cross-reference（研究用）。
 
-流程：
-  PTT raw → 從 content 抽 URL → normalization → exact / fuzzy / non-match → sampling
+第一階段 Article 1 自動流程：
+  PTT raw → 從 content 抽 URL → normalization
+    ├─ exact_match（官方 URL exact）→ Article 1 status = exact_match
+    ├─ fuzzy_match（研究用；≠ temp / non_match）→ 仍進 Fuzzy Review
+    └─ 無 exact → Article 1 status = temp（等待人工；不是 non_match）
 
 不建立 scam / non-scam label。
+non_match 不由本自動流程產生。
 """
 
 from __future__ import annotations
@@ -18,6 +22,12 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable
 from urllib.parse import unquote, urlparse
+
+from scripts.article1_status import (
+    ARTICLE1_STATUS_EXACT_MATCH,
+    ARTICLE1_STATUS_TEMP,
+    classify_article1_status,
+)
 
 # 沿用既有 regex 起點，但在此模組內做清理與研究用 normalization
 URL_PATTERN = re.compile(
@@ -162,11 +172,10 @@ def registrable_domain(host: str) -> str:
 
 
 def classify_url(nu: NormalizedUrl, hosts: set[str], host_paths: set[str], host_example: dict[str, str]) -> UrlMatchRow | None:
-    """回傳 match row；若此 URL 對 165 無 reasonable 對應則回 None（留給 non-match）。"""
+    """回傳 match row；若此 URL 對 165 無 reasonable 對應則回 None。"""
     base_kwargs = {
         "extracted_url": nu.raw_extracted,
         "normalized_url": nu.normalized_host_path,
-        "matched_165_url": "",
         "review_status": "pending",
     }
 
@@ -200,6 +209,7 @@ def classify_url(nu: NormalizedUrl, hosts: set[str], host_paths: set[str], host_
     if nu.normalized_host in SHORTENER_HOSTS:
         return UrlMatchRow(
             **base_kwargs,
+            matched_165_url="",
             match_type="fuzzy_match",
             match_reason="shortener_or_redirect_domain_host",
             title="",
@@ -270,6 +280,45 @@ def write_csv(path: Path, rows: Iterable[UrlMatchRow], seed: int) -> None:
             )
 
 
+def write_article1_status_csv(
+    path: Path,
+    source_rows: list[dict],
+    status_by_url: dict[str, dict],
+) -> None:
+    """保留原始 Article 1 欄位，並加上 status（temp / exact_match）。"""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    base_fields: list[str] = list(source_rows[0].keys()) if source_rows else []
+    for required in (
+        "title",
+        "url",
+        "content",
+        "source",
+        "published_at",
+        "source_board",
+        "search_keyword",
+    ):
+        if required not in base_fields:
+            base_fields.append(required)
+
+    extra = ["status", "status_reason", "has_fuzzy_url_signal", "matched_official_url"]
+    fieldnames = [f for f in base_fields if f not in extra] + extra
+
+    with open(path, "w", newline="", encoding="utf-8-sig") as file:
+        writer = csv.DictWriter(file, fieldnames=fieldnames, extrasaction="ignore")
+        writer.writeheader()
+        for row in source_rows:
+            article_url = (row.get("url") or "").strip()
+            meta = status_by_url.get(article_url) or {
+                "status": ARTICLE1_STATUS_TEMP,
+                "status_reason": "no_exact_url_match_waiting_human_review",
+                "has_fuzzy_url_signal": "no",
+                "matched_official_url": "",
+            }
+            out = dict(row)
+            out.update(meta)
+            writer.writerow(out)
+
+
 def run_cross_reference(
     ptt_csv: str,
     scam165_csv: str,
@@ -283,10 +332,14 @@ def run_cross_reference(
 
     exact_rows: list[UrlMatchRow] = []
     fuzzy_rows: list[UrlMatchRow] = []
-    non_match_articles: list[UrlMatchRow] = []
+    # 無 exact、亦無 fuzzy URL signal 的 Article 1 → temp（不是 non_match）
+    temp_no_url_signal_articles: list[UrlMatchRow] = []
+    status_by_url: dict[str, dict] = {}
 
     articles_with_url = 0
     total_extracted_urls = 0
+    exact_article_count = 0
+    temp_article_count = 0
 
     for article in ptt_rows:
         title = article.get("title") or ""
@@ -301,6 +354,7 @@ def run_cross_reference(
 
         article_has_exact = False
         article_has_fuzzy = False
+        matched_official = ""
 
         for raw_url in extracted:
             nu = normalize_extracted_url(raw_url)
@@ -315,12 +369,32 @@ def run_cross_reference(
             if matched.match_type == "exact_match":
                 exact_rows.append(matched)
                 article_has_exact = True
+                if not matched_official:
+                    matched_official = matched.matched_165_url
             elif matched.match_type == "fuzzy_match":
                 fuzzy_rows.append(matched)
                 article_has_fuzzy = True
 
+        status = classify_article1_status(has_exact_url_match=article_has_exact)
+        if status == ARTICLE1_STATUS_EXACT_MATCH:
+            exact_article_count += 1
+            status_reason = "official_url_exact_match"
+        else:
+            temp_article_count += 1
+            if article_has_fuzzy:
+                status_reason = "no_exact_match_has_fuzzy_signal_waiting_human_review"
+            else:
+                status_reason = "no_exact_url_match_waiting_human_review"
+
+        status_by_url[article_url] = {
+            "status": status,
+            "status_reason": status_reason,
+            "has_fuzzy_url_signal": "yes" if article_has_fuzzy else "no",
+            "matched_official_url": matched_official,
+        }
+
         if not article_has_exact and not article_has_fuzzy:
-            non_match_articles.append(
+            temp_no_url_signal_articles.append(
                 UrlMatchRow(
                     title=title,
                     article_url=article_url,
@@ -328,8 +402,8 @@ def run_cross_reference(
                     extracted_url="",
                     normalized_url="",
                     matched_165_url="",
-                    match_type="non_match",
-                    match_reason="no exact or fuzzy URL correspondence with 165 for this article",
+                    match_type=ARTICLE1_STATUS_TEMP,
+                    match_reason="no_exact_url_match_waiting_human_review",
                     review_status="pending",
                 )
             )
@@ -341,27 +415,29 @@ def run_cross_reference(
     for row in exact_sample:
         row.random_sample_group = "exact_sample"
 
-    # Fuzzy：接近 100% review → 全部輸出
+    # Fuzzy：接近 100% review → 全部輸出（既有 Fuzzy Review 流程，不破壞）
     for row in fuzzy_rows:
         row.random_sample_group = "fuzzy_full_review"
 
-    non_n = len(non_match_articles)
-    non_sample_n = sample_count(non_n, cap=None)  # 200 篇規模下約 5–10%
-    if non_n <= non_sample_n:
-        non_sample = non_match_articles
+    temp_n = len(temp_no_url_signal_articles)
+    temp_sample_n = sample_count(temp_n, cap=None)
+    if temp_n <= temp_sample_n:
+        temp_sample = temp_no_url_signal_articles
     else:
-        non_sample = rng.sample(non_match_articles, non_sample_n)
-    for row in non_sample:
-        row.random_sample_group = "non_match_sample"
+        temp_sample = rng.sample(temp_no_url_signal_articles, temp_sample_n)
+    for row in temp_sample:
+        row.random_sample_group = "temp_sample"
 
     out = Path(output_dir)
     exact_path = out / "ptt_exact_matches.csv"
     fuzzy_path = out / "ptt_fuzzy_matches_review.csv"
-    non_path = out / "ptt_non_matches_sample.csv"
+    temp_path = out / "ptt_temp_articles_sample.csv"
+    article1_path = out / "ptt_article1_status.csv"
 
     write_csv(exact_path, exact_sample, seed)
     write_csv(fuzzy_path, fuzzy_rows, seed)
-    write_csv(non_path, non_sample, seed)
+    write_csv(temp_path, temp_sample, seed)
+    write_article1_status_csv(article1_path, ptt_rows, status_by_url)
 
     return {
         "ptt_article_count": len(ptt_rows),
@@ -369,13 +445,25 @@ def run_cross_reference(
         "total_extracted_urls": total_extracted_urls,
         "exact_url_rows": len(exact_rows),
         "fuzzy_url_rows": len(fuzzy_rows),
-        "non_match_articles": non_n,
+        "article1_exact_match_articles": exact_article_count,
+        "article1_temp_articles": temp_article_count,
+        "temp_articles_no_url_signal": temp_n,
         "exact_sample_rows": len(exact_sample),
         "fuzzy_review_rows": len(fuzzy_rows),
-        "non_match_sample_rows": len(non_sample),
+        "temp_sample_rows": len(temp_sample),
         "random_seed": seed,
-        "output_files": [str(exact_path), str(fuzzy_path), str(non_path)],
+        "output_files": [
+            str(exact_path),
+            str(fuzzy_path),
+            str(temp_path),
+            str(article1_path),
+        ],
         "165_unique_hosts": len(hosts),
+        "note": (
+            "Article 1 auto statuses are exact_match|temp only; "
+            "non_match is reserved for later human review. "
+            "Fuzzy Review CSV is unchanged in role."
+        ),
     }
 
 
