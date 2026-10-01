@@ -13,3 +13,5 @@ __pycache__/
 *~
 .vscode/
 *.Zone.Identifier
+data/review/**/fuzzy_manual_answers.json
+data/review/**/fuzzy_manual_answers.json.tmp
