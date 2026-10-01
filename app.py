@@ -1,8 +1,10 @@
-﻿from flask import Flask, request, jsonify, send_from_directory, abort
+﻿from flask import Flask, request, jsonify, send_from_directory, abort, session
 from flask_cors import CORS
 import urllib3
 import os
+import secrets
 import traceback
+from functools import wraps
 from dotenv import load_dotenv
 
 from google import genai
@@ -14,6 +16,7 @@ from modules import url_checker
 from modules import text_checker
 from modules import rag_searcher
 from modules import image_checker
+from modules import review_store
 
 # 環境變數設定（金鑰只放後端，不要寫進前端）
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -21,6 +24,11 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 load_dotenv(dotenv_path=os.path.join(current_dir, ".env"))
 
 app = Flask(__name__)
+app.secret_key = os.getenv("FLASK_SECRET_KEY") or secrets.token_hex(32)
+app.config.update(
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE="Lax",
+)
 
 # GitHub Pages 前端會從不同網域呼叫 API，所以需要 CORS
 # 正式環境建議在 Render 設定 FRONTEND_ORIGIN=https://你的帳號.github.io
@@ -30,6 +38,7 @@ CORS(app, resources={r"/api/*": {"origins": cors_origins or ["*"]}})
 
 print("==== 🔐 環境變數載入測試 ====")
 print(f"FRONTEND_ORIGIN: {frontend_origin}")
+print(f"REVIEW_PASSWORD set: {'yes' if os.getenv('REVIEW_PASSWORD') else 'no'}")
 
 # 165 資料庫網址
 CSV_URL = "https://opdadm.moi.gov.tw/api/v1/no-auth/resource/api/dataset/29E8E643-88ED-4952-B21E-BD42A3B7108C/resource/FCAF44C5-978E-405D-BCCB-4FCF16DF7D25/download"
@@ -219,6 +228,141 @@ def api_check_image():
 
 
 # =========================
+# 研究小組 Review（密碼保護；不影響公開 docs 網站）
+# =========================
+
+def _review_password_configured() -> str:
+    return (os.getenv("REVIEW_PASSWORD") or "").strip()
+
+
+def review_login_required(view):
+    @wraps(view)
+    def wrapped(*args, **kwargs):
+        if not session.get("review_authenticated"):
+            return jsonify({"error": "未授權：請先登入 review"}), 401
+        return view(*args, **kwargs)
+
+    return wrapped
+
+
+@app.route("/review", methods=["GET"])
+@app.route("/review/", methods=["GET"])
+def review_home():
+    return send_from_directory("review", "index.html")
+
+
+@app.route("/review/<path:filename>", methods=["GET"])
+def review_static(filename):
+    # 只允許前端靜態檔，不直接暴露研究 CSV
+    if filename in {"index.html", "style.css", "app.js"}:
+        return send_from_directory("review", filename)
+    abort(404)
+
+
+@app.route("/api/review/login", methods=["POST"])
+def api_review_login():
+    expected = _review_password_configured()
+    if not expected:
+        return jsonify({"error": "伺服器尚未設定 REVIEW_PASSWORD"}), 503
+
+    data = request.get_json(silent=True) or {}
+    password = str(data.get("password") or "")
+    if not password or not secrets.compare_digest(password, expected):
+        return jsonify({"error": "密碼錯誤"}), 401
+
+    session.clear()
+    session["review_authenticated"] = True
+    return jsonify({"ok": True})
+
+
+@app.route("/api/review/logout", methods=["POST"])
+def api_review_logout():
+    session.clear()
+    return jsonify({"ok": True})
+
+
+@app.route("/api/review/session", methods=["GET"])
+@review_login_required
+def api_review_session():
+    return jsonify({"ok": True, "authenticated": True})
+
+
+@app.route("/api/review/items", methods=["GET"])
+@review_login_required
+def api_review_items():
+    try:
+        items = review_store.load_review_items()
+        progress = review_store.progress_stats(items)
+        return jsonify({"items": items, "progress": progress})
+    except FileNotFoundError as exc:
+        return jsonify({"error": str(exc)}), 404
+    except Exception:
+        traceback.print_exc()
+        return jsonify({"error": "讀取 review 資料失敗"}), 500
+
+
+@app.route("/api/review/save", methods=["POST"])
+@review_login_required
+def api_review_save():
+    data = request.get_json(silent=True) or {}
+    review_id = data.get("review_id")
+    if review_id is None or str(review_id).strip() == "":
+        return jsonify({"error": "缺少 review_id"}), 400
+    try:
+        saved = review_store.upsert_answer(str(review_id), data)
+        return jsonify({"ok": True, "answer": saved})
+    except Exception:
+        traceback.print_exc()
+        return jsonify({"error": "存檔失敗"}), 500
+
+
+@app.route("/api/review/export.csv", methods=["GET"])
+@review_login_required
+def api_review_export_csv():
+    import csv
+    from io import StringIO
+
+    try:
+        items = review_store.load_review_items()
+    except Exception:
+        traceback.print_exc()
+        return jsonify({"error": "匯出失敗"}), 500
+
+    fieldnames = [
+        "review_id",
+        "shortener_host",
+        "title",
+        "article_url",
+        "published_at",
+        "extracted_url",
+        "normalized_url",
+        "match_reason",
+        "review_status",
+        "destination_opened",
+        "destination_type",
+        "is_scam_related_destination",
+        "human_notes",
+        "reviewer",
+    ]
+    buffer = StringIO()
+    writer = csv.DictWriter(buffer, fieldnames=fieldnames, extrasaction="ignore")
+    writer.writeheader()
+    for item in items:
+        writer.writerow(item)
+
+    # UTF-8 BOM，方便 Excel
+    payload = "\ufeff" + buffer.getvalue()
+    return (
+        payload,
+        200,
+        {
+            "Content-Type": "text/csv; charset=utf-8",
+            "Content-Disposition": "attachment; filename=176455_fuzzy_manual_review.csv",
+        },
+    )
+
+
+# =========================
 # 本機開發時也可直接打開前端頁面
 # 正式環境的前端請用 GitHub Pages（docs/）
 # =========================
@@ -230,8 +374,8 @@ def home():
 
 @app.route("/<path:filename>", methods=["GET"])
 def frontend_files(filename):
-    # 避免把 /api/... 誤當成靜態檔
-    if filename.startswith("api/"):
+    # 避免把 /api/... 或 /review... 誤當成 docs 靜態檔
+    if filename.startswith("api/") or filename == "review" or filename.startswith("review/"):
         abort(404)
     return send_from_directory("docs", filename)
 

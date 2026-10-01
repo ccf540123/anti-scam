@@ -139,6 +139,37 @@ https://你的GitHub帳號.github.io/anti-scam-LINE-bot/
 | 正式後端 | Render 自動用 `gunicorn app:app ...` | Render 雲端，不必開筆電 |
 | 正式前端 | GitHub Pages 托管 `docs/` | GitHub，不必開筆電 |
 
+## 研究小組 Review（密碼保護）
+
+公開檢測網站仍是 GitHub Pages 的 `docs/`。  
+人工審查介面只掛在 **Flask 後端**，路徑：
+
+```text
+http://127.0.0.1:5001/review
+```
+
+正式環境則是：
+
+```text
+https://你的-render網址/review
+```
+
+請在 `.env` 或 Render Environment 設定：
+
+```env
+REVIEW_PASSWORD=你們小組共同密碼
+FLASK_SECRET_KEY=一長串隨機字串
+```
+
+使用流程：
+
+1. 打開 `/review`
+2. 輸入共同密碼
+3. 通過後才會載入審查資料並可儲存標註
+4. 可隨時匯出 CSV（欄位與原本 fuzzy review 相同）
+
+沒有登入時，`/api/review/items`、`/api/review/save`、`/api/review/export.csv` 都會回 401。
+
 ## 更新 PTT 案例 CSV（給 RAG 用）
 
 爬蟲輸出 `ptt_scam_cases.csv`。`rag_searcher.py` 會讀取其中的 `title`、`url`、`content`、`source`（多出來的 metadata 欄位可忽略）。

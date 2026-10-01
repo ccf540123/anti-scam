@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>研究小組 Review</title>
+  <link rel="stylesheet" href="/review/style.css">
+</head>
+<body>
+  <div id="loginView" class="screen">
+    <div class="login-card">
+      <p class="eyebrow">Anti-scam research</p>
+      <h1>研究小組審查</h1>
+      <p class="lead">請輸入共同密碼後開始人工標註。公開檢測網站不受影響。</p>
+      <label for="passwordInput">共同密碼</label>
+      <input id="passwordInput" type="password" autocomplete="current-password" placeholder="輸入密碼">
+      <button id="loginBtn" type="button" class="btn primary wide">進入審查</button>
+      <p id="loginError" class="error" hidden></p>
+    </div>
+  </div>
+
+  <div id="appView" class="screen" hidden>
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Fuzzy 短網址審查</p>
+        <h1>一筆一筆看目的地</h1>
+      </div>
+      <div class="topbar-actions">
+        <button id="exportBtn" type="button" class="btn">匯出 CSV</button>
+        <button id="logoutBtn" type="button" class="btn ghost">登出</button>
+      </div>
+    </header>
+
+    <section class="progress-panel">
+      <div class="progress-copy">
+        <strong id="progressText">已完成 0 / 0</strong>
+        <span id="progressHint">先開短網址，再選三個標註</span>
+      </div>
+      <div class="progress-track" aria-hidden="true"><span id="progressBar"></span></div>
+    </section>
+
+    <main class="layout">
+      <article class="panel read-panel">
+        <div class="meta-row">
+          <span class="pill" id="itemId">#-</span>
+          <span class="pill soft" id="hostPill">-</span>
+        </div>
+        <h2 id="itemTitle">載入中…</h2>
+        <dl class="meta-grid">
+          <div>
+            <dt>來源日期</dt>
+            <dd id="itemDate">—</dd>
+          </div>
+          <div>
+            <dt>短網址</dt>
+            <dd><a id="shortLink" href="#" target="_blank" rel="noopener" class="break-url">—</a></dd>
+          </div>
+          <div>
+            <dt>PTT 文章</dt>
+            <dd><a id="articleLink" href="#" target="_blank" rel="noopener" class="break-url">—</a></dd>
+          </div>
+        </dl>
+
+        <div class="link-actions">
+          <a id="openShortBtn" class="btn primary" href="#" target="_blank" rel="noopener">開短網址看目的地</a>
+          <a id="openArticleBtn" class="btn" href="#" target="_blank" rel="noopener">開 PTT 原文</a>
+        </div>
+
+        <div class="content-block">
+          <div class="content-head">
+            <h3>文章內容</h3>
+            <span class="muted">可捲動閱讀</span>
+          </div>
+          <div id="itemContent" class="content-body">（此筆沒有對到正文，請改看 PTT 原文）</div>
+        </div>
+      </article>
+
+      <aside class="panel annotate-panel">
+        <h3>這筆要標什麼？</h3>
+        <p class="annotate-help">只判斷「短網址導到的目的地」，不是整篇文章貼 scam 標籤。</p>
+
+        <fieldset>
+          <legend>1. 有沒有成功打開目的地？</legend>
+          <div class="choice-grid" data-field="destination_opened">
+            <button type="button" data-value="yes">有打開</button>
+            <button type="button" data-value="no">打不開</button>
+            <button type="button" data-value="skip">先跳過</button>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>2. 目的地類型</legend>
+          <div class="choice-grid wrap" data-field="destination_type">
+            <button type="button" data-value="新聞">新聞</button>
+            <button type="button" data-value="政府或防詐宣導">政府／防詐宣導</button>
+            <button type="button" data-value="社群平台">社群平台</button>
+            <button type="button" data-value="疑似詐騙站">疑似詐騙站</button>
+            <button type="button" data-value="短網址失效">短網址失效</button>
+            <button type="button" data-value="其他">其他</button>
+            <button type="button" data-value="不確定">不確定</button>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>3. 目的地本身是不是詐騙站？</legend>
+          <div class="choice-grid" data-field="is_scam_related_destination">
+            <button type="button" data-value="yes">是（詐騙落地頁）</button>
+            <button type="button" data-value="no">否（新聞／宣導等）</button>
+            <button type="button" data-value="unsure">不確定</button>
+          </div>
+        </fieldset>
+
+        <label for="humanNotes">備註</label>
+        <textarea id="humanNotes" rows="3" placeholder="例如：導到某新聞網站、已失效…"></textarea>
+
+        <label for="reviewerInput">檢視者</label>
+        <input id="reviewerInput" type="text" placeholder="例如：小陳">
+
+        <p id="saveStatus" class="save-status" aria-live="polite"></p>
+
+        <div class="nav-row">
+          <button id="prevBtn" type="button" class="btn">上一筆</button>
+          <button id="jumpBtn" type="button" class="btn">下一筆未填</button>
+          <button id="nextBtn" type="button" class="btn primary">存檔並下一筆</button>
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <script src="/review/app.js"></script>
+</body>
+</html>

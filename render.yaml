@@ -19,3 +19,7 @@ services:
         sync: false
       - key: GEMINI_API_KEY_3
         sync: false
+      - key: REVIEW_PASSWORD
+        sync: false
+      - key: FLASK_SECRET_KEY
+        sync: false
