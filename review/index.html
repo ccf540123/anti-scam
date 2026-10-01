@@ -29,7 +29,7 @@
         <div class="dataset-switch" role="group" aria-label="選擇 Review 資料集">
           <span class="dataset-label">資料集</span>
           <button type="button" class="dataset-btn active" data-dataset="fuzzy" id="datasetFuzzyBtn">Fuzzy 候選</button>
-          <button type="button" class="dataset-btn" data-dataset="ptt_candidate" id="datasetPttBtn">PTT 候選</button>
+          <button type="button" class="dataset-btn" data-dataset="ptt_candidate" id="datasetPttBtn">PTT Temp</button>
         </div>
         <button id="exportBtn" type="button" class="btn">匯出 CSV</button>
         <button id="logoutBtn" type="button" class="btn ghost">登出</button>
@@ -132,22 +132,44 @@
         </div>
 
         <div id="pttAnnotate" data-ptt-only hidden>
-          <h3>這篇文章是哪一類？</h3>
-          <p class="annotate-help">標的是整篇候選文章類型，方便研究篩選；不是替公開檢測貼標籤。</p>
+          <h3>Temp 人工檢查</h3>
+          <p class="annotate-help">
+            組員閱讀文章與 URL 後，自行判斷是否值得繼續追查，並<strong>手動輸入</strong> Keyword。
+            程式不會自動抽詞或判斷。
+          </p>
 
           <fieldset>
-            <legend>文章類型</legend>
-            <div class="choice-grid wrap" data-field="article_type">
-              <button type="button" data-value="個人被騙經驗">個人被騙經驗</button>
-              <button type="button" data-value="求助／詢問">求助／詢問</button>
-              <button type="button" data-value="新聞／轉載">新聞／轉載</button>
-              <button type="button" data-value="防詐宣導">防詐宣導</button>
-              <button type="button" data-value="廣告／推廣">廣告／推廣</button>
-              <button type="button" data-value="其他">其他</button>
-              <button type="button" data-value="不相關">不相關</button>
-              <button type="button" data-value="不確定">不確定</button>
+            <legend>1. 文章內容是否包含詐騙相關資訊？</legend>
+            <div class="choice-grid" data-field="content_relevant">
+              <button type="button" data-value="yes">有</button>
+              <button type="button" data-value="no">沒有</button>
             </div>
           </fieldset>
+
+          <fieldset>
+            <legend>2. 文章中的 URL 是否包含詐騙相關資訊？</legend>
+            <div class="choice-grid" data-field="url_relevant">
+              <button type="button" data-value="yes">有</button>
+              <button type="button" data-value="no">沒有</button>
+              <button type="button" data-value="none">無 URL</button>
+            </div>
+          </fieldset>
+
+          <label for="keywordsInput">3. 手動輸入 Keyword（每行一個）</label>
+          <p class="annotate-help">
+            這些詞之後會拿去第二階段搜尋 PTT。請組員自己輸入，例如：假投資、虛擬貨幣、要求匯款。
+            若前面選「有」，至少填一個 Keyword；若確認都沒有可用資訊，可留空並存成 non_match。
+          </p>
+          <textarea
+            id="keywordsInput"
+            rows="5"
+            placeholder="假投資&#10;虛擬貨幣&#10;要求匯款"
+          ></textarea>
+
+          <p class="status-pill-row">
+            目前狀態：
+            <span class="pill soft" id="pttStatusPill">temp</span>
+          </p>
         </div>
 
         <label for="humanNotes">備註</label>

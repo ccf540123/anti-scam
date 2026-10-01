@@ -379,7 +379,7 @@ def api_review_export_csv():
     writer = csv.DictWriter(buffer, fieldnames=fieldnames, extrasaction="ignore")
     writer.writeheader()
     for item in items:
-        writer.writerow(item)
+        writer.writerow(review_store.export_item_row(item, dataset_id))
 
     # UTF-8 BOM，方便 Excel
     payload = "\ufeff" + buffer.getvalue()
