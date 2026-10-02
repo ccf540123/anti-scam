@@ -257,6 +257,34 @@ textarea { resize: vertical; min-height: 84px; }
 }
 .pill.soft { background: #f0e7da; color: var(--muted); }
 
+.pill.done {
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 650;
+}
+
+.done-by,
+.locked-notice {
+  margin: 0.35rem 0 0.75rem;
+  font-family: "Avenir Next", "PingFang TC", "Noto Sans TC", sans-serif;
+  font-size: 0.92rem;
+}
+
+.locked-notice {
+  color: var(--warn);
+  padding: 0.65rem 0.75rem;
+  background: #fff4ec;
+  border: 1px solid #f3d5c4;
+  border-radius: 12px;
+}
+
+.choice-grid button:disabled,
+textarea:disabled,
+input:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 .meta-grid {
   display: grid;
   grid-template-columns: 1fr;

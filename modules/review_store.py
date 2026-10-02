@@ -6,9 +6,14 @@ import csv
 import json
 import os
 import threading
+from datetime import datetime, timezone
 from pathlib import Path
 
 _lock = threading.Lock()
+
+
+class ReviewLockedError(Exception):
+    """這篇文章已由組員完成審查，不可再覆寫。"""
 
 DEFAULT_PTT_ITEMS_CSV = os.path.join("data", "review", "ptt_candidates", "items.csv")
 DEFAULT_PTT_ANSWERS_PATH = os.path.join(
@@ -133,7 +138,18 @@ def save_answers(answers: dict, dataset_id: str | None = None) -> None:
     tmp = path.with_suffix(path.suffix + ".tmp")
     with open(tmp, "w", encoding="utf-8") as file:
         json.dump(answers, file, ensure_ascii=False, indent=2)
+        file.flush()
+        os.fsync(file.fileno())
     tmp.replace(path)
+
+
+def is_review_locked(answer: dict) -> bool:
+    """已完成審查的答案不可被其他組員覆寫。"""
+    if not answer:
+        return False
+    if (answer.get("review_status") or "").strip() != "reviewed":
+        return False
+    return is_ptt_temp_review_complete(answer)
 
 
 def normalize_keywords(value) -> list[str]:
@@ -247,6 +263,8 @@ def _load_ptt_candidate_items(path: Path, answers: dict) -> list[dict]:
                     "source_board": row.get("source_board") or "",
                     "search_keyword": row.get("search_keyword") or "",
                     "imported_at": row.get("imported_at") or "",
+                    "saved_at": answer.get("saved_at") or "",
+                    "review_locked": is_review_locked(fields),
                     **fields,
                 }
             )
@@ -317,6 +335,10 @@ def upsert_answer(
     with _lock:
         answers = load_answers(dataset["id"])
         current = dict(answers.get(str(review_id)) or {})
+        if is_review_locked(current):
+            raise ReviewLockedError(
+                f"review_id={review_id} 已完成，請改審其他文章。"
+            )
         if "keywords" not in cleaned and "keywords" in current:
             keywords = normalize_keywords(current.get("keywords"))
         elif keywords is None:
@@ -346,6 +368,8 @@ def upsert_answer(
             )
 
         current.update(cleaned)
+        saved_at = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        current["saved_at"] = saved_at
         answers[str(review_id)] = current
         save_answers(answers, dataset["id"])
         return current

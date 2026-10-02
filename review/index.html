@@ -11,7 +11,7 @@
     <div class="login-card">
       <p class="eyebrow">Anti-scam research</p>
       <h1>研究小組審查</h1>
-      <p class="lead">請輸入共同密碼後開始人工標註。公開檢測網站不受影響。</p>
+      <p class="lead">請輸入共同密碼。儲存後資料會留在 Render 伺服器，全組共用同一份進度。</p>
       <label for="passwordInput">共同密碼</label>
       <input id="passwordInput" type="password" autocomplete="current-password" placeholder="輸入密碼">
       <button id="loginBtn" type="button" class="btn primary wide">進入審查</button>
@@ -26,15 +26,15 @@
         <h1 id="datasetHeading">一筆一筆手動抽 Keyword</h1>
       </div>
       <div class="topbar-actions">
-        <button id="exportBtn" type="button" class="btn">匯出 CSV</button>
+        <button id="refreshBtn" type="button" class="btn">重新載入進度</button>
         <button id="logoutBtn" type="button" class="btn ghost">登出</button>
       </div>
     </header>
 
     <section class="progress-panel">
       <div class="progress-copy">
-        <strong id="progressText">已完成 0 / 0</strong>
-        <span id="progressHint">閱讀後勾選相關性，並手動輸入 Keyword</span>
+        <strong id="progressText">總共 0 篇 · 已完成 0 · 剩 0</strong>
+        <span id="progressHint">請先填檢視者姓名，完成後按「儲存」</span>
       </div>
       <div class="progress-track" aria-hidden="true"><span id="progressBar"></span></div>
     </section>
@@ -50,7 +50,9 @@
         <div class="meta-row">
           <span class="pill" id="itemId">#-</span>
           <span class="pill soft" id="hostPill">-</span>
+          <span class="pill done" id="donePill" hidden>已完成</span>
         </div>
+        <p id="doneByLine" class="done-by" hidden></p>
         <h2 id="itemTitle">載入中…</h2>
         <dl class="meta-grid">
           <div>
@@ -91,6 +93,9 @@
             組員閱讀文章與 URL 後，自行判斷是否值得繼續追查，並<strong>手動輸入</strong> Keyword。
             程式不會自動抽詞或判斷。
           </p>
+          <p id="lockedNotice" class="locked-notice" hidden>
+            這篇已由其他組員完成，請按「下一筆未填」改審其他文章。
+          </p>
 
           <fieldset>
             <legend>1. 文章內容是否包含詐騙相關資訊？</legend>
@@ -129,7 +134,7 @@
         <label for="humanNotes">備註</label>
         <textarea id="humanNotes" rows="3" placeholder="例如：偏宣導、可再確認…"></textarea>
 
-        <label for="reviewerInput">檢視者</label>
+        <label for="reviewerInput">檢視者（必填後再儲存）</label>
         <input id="reviewerInput" type="text" placeholder="例如：小陳">
 
         <p id="saveStatus" class="save-status" aria-live="polite"></p>
@@ -137,7 +142,8 @@
         <div class="nav-row">
           <button id="prevBtn" type="button" class="btn">上一筆</button>
           <button id="jumpBtn" type="button" class="btn">下一筆未填</button>
-          <button id="nextBtn" type="button" class="btn primary">存檔並下一筆</button>
+          <button id="saveBtn" type="button" class="btn primary">儲存</button>
+          <button id="nextBtn" type="button" class="btn">儲存並下一筆未填</button>
         </div>
       </aside>
     </main>

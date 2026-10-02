@@ -240,6 +240,49 @@ class TestReviewMultiDataset(unittest.TestCase):
         self.assertEqual(answer["status"], "non_match")
         self.assertEqual(answer["keywords"], [])
 
+    def test_completed_review_is_locked_for_other_members(self):
+        items = self.client.get("/api/review/items?dataset=ptt_candidate").get_json()["items"]
+        review_id = items[0]["review_id"]
+        first = self.client.post(
+            "/api/review/save",
+            data=json.dumps(
+                {
+                    "dataset": "ptt_candidate",
+                    "review_id": review_id,
+                    "content_relevant": "yes",
+                    "url_relevant": "no",
+                    "keywords": ["假投資"],
+                    "reviewer": "alice",
+                }
+            ),
+            content_type="application/json",
+        )
+        self.assertEqual(first.status_code, 200)
+        self.assertEqual(first.get_json()["answer"]["review_status"], "reviewed")
+
+        blocked = self.client.post(
+            "/api/review/save",
+            data=json.dumps(
+                {
+                    "dataset": "ptt_candidate",
+                    "review_id": review_id,
+                    "content_relevant": "no",
+                    "url_relevant": "no",
+                    "keywords": [],
+                    "reviewer": "bob",
+                }
+            ),
+            content_type="application/json",
+        )
+        self.assertEqual(blocked.status_code, 409)
+        self.assertTrue(blocked.get_json().get("locked"))
+
+        reloaded = self.client.get("/api/review/items?dataset=ptt_candidate").get_json()
+        item = next(row for row in reloaded["items"] if row["review_id"] == review_id)
+        self.assertTrue(item["review_locked"])
+        self.assertEqual(item["reviewer"], "alice")
+        self.assertEqual(reloaded["progress"]["done"], 1)
+
     def test_exact_match_items_excluded_from_temp_review(self):
         # 加一篇 exact_match，不應出現在 Temp Review
         with open(self.ptt_csv, "a", encoding="utf-8-sig", newline="") as file:
