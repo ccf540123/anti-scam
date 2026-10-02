@@ -11,6 +11,7 @@
   const jumpBtn = document.getElementById("jumpBtn");
   const humanNotes = document.getElementById("humanNotes");
   const reviewerInput = document.getElementById("reviewerInput");
+  const keywordsInput = document.getElementById("keywordsInput");
   const saveStatus = document.getElementById("saveStatus");
   const datasetFuzzyBtn = document.getElementById("datasetFuzzyBtn");
   const datasetPttBtn = document.getElementById("datasetPttBtn");
@@ -68,10 +69,50 @@
     return data;
   }
 
+  function parseKeywordsText(text) {
+    const lines = String(text || "")
+      .replace(/\r\n/g, "\n")
+      .replace(/\r/g, "\n")
+      .replace(/\|/g, "\n")
+      .replace(/、/g, "\n")
+      .split("\n");
+    const out = [];
+    const seen = {};
+    lines.forEach(function (line) {
+      const keyword = line.trim();
+      if (!keyword || seen[keyword]) return;
+      seen[keyword] = true;
+      out.push(keyword);
+    });
+    return out;
+  }
+
+  function keywordsToText(value) {
+    if (Array.isArray(value)) return value.join("\n");
+    return String(value || "");
+  }
+
+  function deriveLocalPttStatus(contentRelevant, urlRelevant, keywords) {
+    // 有手動 Keyword → 一律 temp；僅「兩邊都無相關 + 無 Keyword」→ non_match
+    if (keywords && keywords.length) return "temp";
+    if (contentRelevant === "no" && (urlRelevant === "no" || urlRelevant === "none")) {
+      return "non_match";
+    }
+    return "temp";
+  }
+
   function isFilled(item) {
     if (!item) return false;
     if (isPttDataset()) {
-      return !!(item.article_type || "").trim();
+      const cr = (item.content_relevant || "").trim();
+      const ur = (item.url_relevant || "").trim();
+      if (!cr || !ur) return false;
+      const keywords = Array.isArray(item.keywords)
+        ? item.keywords
+        : parseKeywordsText(item.keywords);
+      // 任一為「有」→ 必須有 Keyword；兩邊都無相關時可完成（有 Keyword 仍為 temp）
+      if (cr === "yes" || ur === "yes") return keywords.length > 0;
+      return true;
     }
     return !!(
       (item.destination_opened || "").trim() ||
@@ -89,13 +130,13 @@
       el.hidden = !ptt;
     });
     document.getElementById("datasetEyebrow").textContent = ptt
-      ? "PTT 候選文章審查"
+      ? "PTT Temp 人工審查"
       : "Fuzzy 候選文章審查";
     document.getElementById("datasetHeading").textContent = ptt
-      ? "一筆一筆標文章類型"
+      ? "一筆一筆手動抽 Keyword"
       : "一筆一筆看目的地";
     humanNotes.placeholder = ptt
-      ? "例如：偏宣導、內容不足…"
+      ? "例如：偏宣導、可再確認…"
       : "例如：導到某新聞網站、已失效…";
   }
 
@@ -105,11 +146,11 @@
     document.getElementById("progressText").textContent =
       "已完成 " + done + " / " + total;
     let hint = isPttDataset()
-      ? "讀完文章後選文章類型"
+      ? "閱讀後勾選相關性，並手動輸入 Keyword（程式不會自動抽詞）"
       : "先開短網址，再點選三個標註";
     if (dirty) hint = "有未存檔變更，離開前請先存檔";
     if (!total && isPttDataset()) {
-      hint = "尚未匯入 PTT 候選，請先執行匯入指令";
+      hint = "尚未匯入 PTT Temp 候選，請先執行匯入指令";
     }
     document.getElementById("progressHint").textContent = hint;
     const pct = total ? Math.round((done / total) * 100) : 0;
@@ -132,11 +173,17 @@
     const item = currentItem();
     if (!item) return null;
     if (isPttDataset()) {
-      const typeBtn = document.querySelector(
-        '.choice-grid[data-field="article_type"] button.active'
+      const contentBtn = document.querySelector(
+        '.choice-grid[data-field="content_relevant"] button.active'
       );
+      const urlBtn = document.querySelector(
+        '.choice-grid[data-field="url_relevant"] button.active'
+      );
+      const keywords = parseKeywordsText(keywordsInput ? keywordsInput.value : "");
       return {
-        article_type: typeBtn ? typeBtn.getAttribute("data-value") : "",
+        content_relevant: contentBtn ? contentBtn.getAttribute("data-value") : "",
+        url_relevant: urlBtn ? urlBtn.getAttribute("data-value") : "",
+        keywords: keywords,
         human_notes: humanNotes.value.trim(),
         reviewer: reviewerInput.value.trim(),
       };
@@ -164,10 +211,19 @@
     const form = collectForm();
     if (!item || !form) return;
     if (isPttDataset()) {
-      item.article_type = form.article_type;
+      item.content_relevant = form.content_relevant;
+      item.url_relevant = form.url_relevant;
+      item.keywords = form.keywords;
       item.human_notes = form.human_notes;
       item.reviewer = form.reviewer;
-      if (form.article_type) item.review_status = "reviewed";
+      item.status = deriveLocalPttStatus(
+        form.content_relevant,
+        form.url_relevant,
+        form.keywords
+      );
+      item.review_status = isFilled(item) ? "reviewed" : "pending";
+      const pill = document.getElementById("pttStatusPill");
+      if (pill) pill.textContent = item.status || "temp";
       return;
     }
     item.destination_opened = form.destination_opened;
@@ -236,7 +292,13 @@
       : "（此筆沒有對到正文，請改開 PTT 原文）";
 
     if (isPttDataset()) {
-      setChoice("article_type", item.article_type || "");
+      setChoice("content_relevant", item.content_relevant || "");
+      setChoice("url_relevant", item.url_relevant || "");
+      if (keywordsInput) {
+        keywordsInput.value = keywordsToText(item.keywords);
+      }
+      const pill = document.getElementById("pttStatusPill");
+      if (pill) pill.textContent = item.status || "temp";
     } else {
       setChoice("destination_opened", item.destination_opened || "");
       setChoice("destination_type", item.destination_type || "");
@@ -270,6 +332,15 @@
           ...form,
         }),
       });
+      if (isPttDataset()) {
+        item.status = deriveLocalPttStatus(
+          form.content_relevant,
+          form.url_relevant,
+          form.keywords
+        );
+        const pill = document.getElementById("pttStatusPill");
+        if (pill) pill.textContent = item.status || "temp";
+      }
       dirty = false;
       saveStatus.textContent = opts.silent ? "" : "已存檔";
       return true;
@@ -390,6 +461,9 @@
 
   humanNotes.addEventListener("input", scheduleSave);
   reviewerInput.addEventListener("input", scheduleSave);
+  if (keywordsInput) {
+    keywordsInput.addEventListener("input", scheduleSave);
+  }
 
   prevBtn.addEventListener("click", async function () {
     await saveCurrent({ silent: true });
@@ -442,7 +516,7 @@
       const a = document.createElement("a");
       a.href = url;
       a.download = isPttDataset()
-        ? "ptt_candidates_manual_review.csv"
+        ? "ptt_temp_manual_review.csv"
         : "176455_fuzzy_manual_review.csv";
       a.click();
       URL.revokeObjectURL(url);

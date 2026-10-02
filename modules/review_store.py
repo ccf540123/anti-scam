@@ -42,12 +42,17 @@ FUZZY_ANSWER_FIELDS = [
     "review_status",
 ]
 
-# PTT 候選文章：文章類型標註
+# PTT Temp 候選：人工相關性 + 手動多 Keyword（非 article_type）
 PTT_ANSWER_FIELDS = [
-    "article_type",
+    "content_relevant",
+    "url_relevant",
+    "keywords",
+    "status",
     "human_notes",
     "reviewer",
     "review_status",
+    # 舊欄位保留讀取相容，不再作為主要標註
+    "article_type",
 ]
 
 # 舊名稱相容
@@ -84,29 +89,30 @@ DATASETS = {
     },
     "ptt_candidate": {
         "id": "ptt_candidate",
-        "label": "PTT 候選文章",
+        "label": "PTT Temp 候選",
         "kind": "ptt_candidate",
-        "description": "PTT crawler 匯入的候選文章，標註文章類型",
+        "description": "第一階段 Temp Article 1：人工檢查並手動輸入多個 Keyword",
         "default_items_csv": DEFAULT_PTT_ITEMS_CSV,
         "default_answers_path": DEFAULT_PTT_ANSWERS_PATH,
         "items_env": "REVIEW_PTT_ITEMS_CSV",
         "answers_env": "REVIEW_PTT_ANSWERS_PATH",
         "answer_fields": PTT_ANSWER_FIELDS,
-        "export_filename": "ptt_candidates_manual_review.csv",
+        "export_filename": "ptt_temp_manual_review.csv",
         "export_fields": [
+            "article_id",
             "review_id",
-            "dataset_type",
-            "dedup_key",
             "title",
             "article_url",
-            "content",
+            "url",
             "published_at",
             "source",
             "source_board",
             "search_keyword",
-            "imported_at",
+            "content_relevant",
+            "url_relevant",
+            "keywords",
+            "status",
             "review_status",
-            "article_type",
             "human_notes",
             "reviewer",
         ],
@@ -196,10 +202,82 @@ def save_answers(answers: dict, dataset_id: str | None = None) -> None:
     tmp.replace(path)
 
 
+def normalize_keywords(value) -> list[str]:
+    """把人工輸入的 keywords 正規成去空白、去空列的 list（不自動抽詞）。"""
+    if value is None:
+        return []
+    if isinstance(value, list):
+        raw_parts = [str(item) for item in value]
+    else:
+        text = str(value).replace("\r\n", "\n").replace("\r", "\n")
+        # 相容：一行一個，或 | / 、 分隔
+        text = text.replace("|", "\n").replace("、", "\n")
+        raw_parts = text.split("\n")
+    cleaned: list[str] = []
+    seen: set[str] = set()
+    for part in raw_parts:
+        keyword = part.strip()
+        if not keyword or keyword in seen:
+            continue
+        seen.add(keyword)
+        cleaned.append(keyword)
+    return cleaned
+
+
+def keywords_to_export_text(keywords: list[str]) -> str:
+    return " | ".join(keywords)
+
+
+def derive_ptt_article_status(
+    *,
+    content_relevant: str,
+    url_relevant: str,
+    keywords: list[str],
+) -> str:
+    """
+    人工 Review 後的 Article 1 狀態：
+      - 有任何手動 Keyword → 一律 temp（代表仍有後續研究價值）
+      - 內容無相關 + URL 無相關/無連結 + 沒有 Keyword → non_match
+      - 其餘（尚未完成或未確認）→ temp
+    Keyword 只來自組員人工輸入；此函式不抽詞、不推薦。
+    """
+    cr = (content_relevant or "").strip()
+    ur = (url_relevant or "").strip()
+    if keywords:
+        return "temp"
+    if cr == "no" and ur in {"no", "none"}:
+        return "non_match"
+    return "temp"
+
+
+def is_ptt_temp_review_complete(item: dict) -> bool:
+    """
+    Temp Review 完成條件：
+      - 已選 content_relevant 與 url_relevant
+      - 若任一為「有」→ 必須手動填至少一個 Keyword
+      - 若兩者皆無相關：可完成；此時若有 Keyword，status 仍為 temp，
+        只有完全沒有 Keyword 才會是 non_match
+    """
+    cr = (item.get("content_relevant") or "").strip()
+    ur = (item.get("url_relevant") or "").strip()
+    if not cr or not ur:
+        return False
+    keywords = normalize_keywords(item.get("keywords"))
+    if cr == "yes" or ur == "yes":
+        return bool(keywords)
+    return True
+
+
 def _merge_answer_fields(row: dict, answer: dict, fields: list[str]) -> dict:
     merged = {}
     for field in fields:
+        if field == "keywords":
+            raw = answer.get("keywords", row.get("keywords"))
+            merged["keywords"] = normalize_keywords(raw)
+            continue
         default = "pending" if field == "review_status" else ""
+        if field == "status":
+            default = "temp"
         merged[field] = answer.get(field, row.get(field) or default)
     return merged
 
@@ -249,16 +327,24 @@ def _load_ptt_candidate_items(path: Path, answers: dict) -> list[dict]:
             review_id = str(row.get("review_id") or "").strip()
             if not review_id:
                 continue
+            # Article 1 / source CSV 的 exact_match 永遠不進 Temp Review。
+            # 必須以原始列為準，不可被 answers 舊資料覆寫成 temp。
+            source_status = (row.get("status") or "temp").strip()
+            if source_status == "exact_match":
+                continue
             answer = answers.get(review_id) or {}
             fields = _merge_answer_fields(row, answer, PTT_ANSWER_FIELDS)
+            article_url = (row.get("article_url") or "").strip()
             items.append(
                 {
                     "review_id": review_id,
+                    "article_id": review_id,
                     "dataset_id": "ptt_candidate",
                     "dataset_type": row.get("dataset_type") or "ptt_candidate",
                     "dedup_key": row.get("dedup_key") or "",
                     "title": row.get("title") or "",
-                    "article_url": (row.get("article_url") or "").strip(),
+                    "article_url": article_url,
+                    "url": article_url,
                     "content": row.get("content") or "",
                     "published_at": row.get("published_at") or "",
                     "source": row.get("source") or "ptt",
@@ -299,7 +385,7 @@ def load_review_items(dataset_id: str | None = None) -> list[dict]:
 def is_item_filled(item: dict, dataset_id: str | None = None) -> bool:
     kind = (dataset_id or item.get("dataset_id") or item.get("dataset_type") or "fuzzy")
     if kind == "ptt_candidate":
-        return bool((item.get("article_type") or "").strip())
+        return is_ptt_temp_review_complete(item)
     return bool(
         (item.get("destination_opened") or "").strip()
         or (item.get("destination_type") or "").strip()
@@ -313,22 +399,89 @@ def progress_stats(items: list[dict], dataset_id: str | None = None) -> dict:
     return {"total": total, "done": done, "remaining": max(total - done, 0)}
 
 
+def export_item_row(item: dict, dataset_id: str | None = None) -> dict:
+    """匯出用列：keywords 轉成可讀字串。"""
+    kind = dataset_id or item.get("dataset_id") or item.get("dataset_type") or "fuzzy"
+    row = dict(item)
+    if kind == "ptt_candidate":
+        keywords = normalize_keywords(row.get("keywords"))
+        row["keywords"] = keywords_to_export_text(keywords)
+        row["article_id"] = row.get("article_id") or row.get("review_id")
+        row["url"] = row.get("url") or row.get("article_url") or ""
+    return row
+
+
 def upsert_answer(
     review_id: str, payload: dict, dataset_id: str | None = None
 ) -> dict:
     dataset = get_dataset(dataset_id)
     fields = dataset["answer_fields"]
     cleaned = {}
+
+    if dataset["kind"] == "ptt_candidate":
+        for field in fields:
+            if field not in payload or payload[field] is None:
+                continue
+            if field == "keywords":
+                cleaned["keywords"] = normalize_keywords(payload[field])
+            else:
+                cleaned[field] = str(payload[field]).strip()
+
+        content_relevant = cleaned.get("content_relevant", "")
+        url_relevant = cleaned.get("url_relevant", "")
+        keywords = cleaned.get("keywords")
+        if keywords is None:
+            # 若這次 payload 沒帶 keywords，稍後與 current 合併再算
+            keywords = None
+        else:
+            cleaned["status"] = derive_ptt_article_status(
+                content_relevant=content_relevant or "",
+                url_relevant=url_relevant or "",
+                keywords=keywords,
+            )
+
+        with _lock:
+            answers = load_answers(dataset["id"])
+            current = dict(answers.get(str(review_id)) or {})
+            if "keywords" not in cleaned and "keywords" in current:
+                keywords = normalize_keywords(current.get("keywords"))
+            elif keywords is None:
+                keywords = normalize_keywords(current.get("keywords"))
+            else:
+                keywords = cleaned["keywords"]
+
+            merged_content = cleaned.get(
+                "content_relevant", current.get("content_relevant", "")
+            )
+            merged_url = cleaned.get("url_relevant", current.get("url_relevant", ""))
+            cleaned["keywords"] = keywords
+            cleaned["status"] = derive_ptt_article_status(
+                content_relevant=str(merged_content or ""),
+                url_relevant=str(merged_url or ""),
+                keywords=keywords,
+            )
+
+            probe = {
+                "content_relevant": merged_content,
+                "url_relevant": merged_url,
+                "keywords": keywords,
+            }
+            if not cleaned.get("review_status"):
+                cleaned["review_status"] = (
+                    "reviewed" if is_ptt_temp_review_complete(probe) else "pending"
+                )
+
+            current.update(cleaned)
+            answers[str(review_id)] = current
+            save_answers(answers, dataset["id"])
+            return current
+
     for field in fields:
         if field in payload and payload[field] is not None:
             cleaned[field] = str(payload[field]).strip()
 
     if not cleaned.get("review_status"):
-        if dataset["kind"] == "ptt_candidate":
-            cleaned["review_status"] = (
-                "reviewed" if cleaned.get("article_type") else "pending"
-            )
-        elif (
+        if (
             cleaned.get("destination_opened")
             or cleaned.get("destination_type")
             or cleaned.get("is_scam_related_destination")
