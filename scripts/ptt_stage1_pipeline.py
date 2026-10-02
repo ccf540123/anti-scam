@@ -228,6 +228,30 @@ def run_stage1_pipeline(
         )
         crawl_info["skipped"] = False
         result["crawl"] = crawl_info
+        # 本次爬蟲 0 篇：不要拿舊 ptt_scam_cases.csv 繼續比對／匯入
+        if crawl_info.get("article_count", 0) == 0:
+            message = "本次沒有成功爬到文章，已停止後續流程。"
+            print(message)
+            result["stopped"] = True
+            result["stop_reason"] = message
+            result["xref"] = {"skipped": True, "reason": "crawl_empty"}
+            result["import"] = {"skipped": True, "reason": "crawl_empty"}
+            result["article1"] = {
+                "exact_match": 0,
+                "temp": 0,
+                "other": 0,
+                "total": 0,
+            }
+            result["summary"] = {
+                "爬蟲文章": 0,
+                "exact_match": 0,
+                "temp": 0,
+                "新增 Review": 0,
+                "已存在／跳過": 0,
+                "Review 總筆數": 0,
+                "已停止": message,
+            }
+            return result
 
     article1_path = Path(xref_output_dir) / "ptt_article1_status.csv"
     if skip_xref:
@@ -274,6 +298,9 @@ def print_pipeline_summary(result: dict) -> None:
     summary = result.get("summary") or {}
     print("==== 第一階段 Pipeline 摘要 ====")
     print(f"爬蟲文章：{summary.get('爬蟲文章', 0)}")
+    if result.get("stopped"):
+        print(summary.get("已停止") or result.get("stop_reason") or "已停止後續流程。")
+        return
     print(f"exact_match：{summary.get('exact_match', 0)}")
     print(f"temp：{summary.get('temp', 0)}")
     print(f"新增 Review：{summary.get('新增 Review', 0)}")

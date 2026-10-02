@@ -360,6 +360,103 @@ class TestRunStage1Pipeline(unittest.TestCase):
             self.assertEqual(result["summary"]["新增 Review"], 1)
             self.assertEqual(result["summary"]["temp"], 1)
 
+    def test_pipeline_stops_when_crawl_returns_zero_articles(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            ptt_csv = root / "ptt_scam_cases.csv"
+            # 舊 CSV 存在：空爬蟲時不可拿它繼續比對／匯入
+            _write_csv(
+                ptt_csv,
+                ["title", "url", "content", "source", "published_at"],
+                [
+                    {
+                        "title": "stale",
+                        "url": "https://www.ptt.cc/bbs/Bunco/M.stale.html",
+                        "content": "old",
+                        "source": "ptt",
+                        "published_at": "Mon",
+                    }
+                ],
+            )
+            xref_dir = root / "xref"
+            review_dir = root / "ptt_candidates"
+            review_dir.mkdir()
+            _write_csv(
+                review_dir / "items.csv",
+                [
+                    "review_id",
+                    "dataset_type",
+                    "dedup_key",
+                    "title",
+                    "article_url",
+                    "content",
+                    "published_at",
+                    "source",
+                    "source_board",
+                    "search_keyword",
+                    "imported_at",
+                    "review_status",
+                    "status",
+                    "article_type",
+                    "human_notes",
+                    "reviewer",
+                ],
+                [],
+            )
+            answers_path = review_dir / "answers.json"
+            answers_path.write_text('{"keep": true}', encoding="utf-8")
+            before_answers = answers_path.read_text(encoding="utf-8")
+            before_items = (review_dir / "items.csv").read_text(encoding="utf-8")
+
+            empty_summary = {
+                "boards": ["Bunco"],
+                "keywords": ["詐騙"],
+                "pages": 1,
+                "per_combo": [],
+                "total_before_dedup": 0,
+                "total_after_dedup": 0,
+                "board_counts": {},
+                "possible_case_type_counts": {},
+                "failures": [],
+            }
+
+            with patch(
+                "scripts.ptt_stage1_pipeline.crawl_ptt_multi",
+                return_value=([], empty_summary),
+            ) as mock_crawl, patch(
+                "scripts.ptt_stage1_pipeline.run_dual_source"
+            ) as mock_xref, patch(
+                "scripts.ptt_stage1_pipeline.append_temp_rows_to_review"
+            ) as mock_import:
+                result = run_stage1_pipeline(
+                    pages=1,
+                    ptt_csv=str(ptt_csv),
+                    csv_176455=str(root / "a.csv"),
+                    csv_160055=str(root / "b.csv"),
+                    xref_output_dir=str(xref_dir),
+                    review_out_dir=str(review_dir),
+                    skip_crawl=False,
+                    skip_xref=False,
+                )
+
+            mock_crawl.assert_called_once()
+            mock_xref.assert_not_called()
+            mock_import.assert_not_called()
+            self.assertTrue(result.get("stopped"))
+            self.assertIn("沒有成功爬到文章", result.get("stop_reason", ""))
+            self.assertEqual(result["summary"]["爬蟲文章"], 0)
+            self.assertEqual(result["summary"]["新增 Review"], 0)
+            self.assertEqual(
+                answers_path.read_text(encoding="utf-8"),
+                before_answers,
+            )
+            self.assertEqual(
+                (review_dir / "items.csv").read_text(encoding="utf-8"),
+                before_items,
+            )
+            # 舊 CSV 仍在，但後續流程未使用它寫入新 xref/import
+            self.assertFalse((xref_dir / "ptt_article1_status.csv").exists())
+
     def test_dry_run_does_not_write(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
