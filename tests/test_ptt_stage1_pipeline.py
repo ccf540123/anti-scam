@@ -17,6 +17,7 @@ from scripts.article1_status import (
 from scripts.import_ptt_candidates_to_review import stable_review_id
 from scripts.ptt_stage1_pipeline import (
     append_temp_rows_to_review,
+    commit_and_push_review_items,
     count_article1_statuses,
     main as pipeline_main,
     run_stage1_pipeline,
@@ -470,6 +471,126 @@ class TestRunStage1Pipeline(unittest.TestCase):
             )
             self.assertIsNone(result)
             self.assertFalse(review_dir.exists())
+
+    def test_main_zero_crawl_does_not_commit_or_push(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            ptt_csv = root / "ptt_scam_cases.csv"
+            review_dir = root / "ptt_candidates"
+            empty_summary = {
+                "boards": ["Bunco"],
+                "keywords": ["詐騙"],
+                "pages": 1,
+                "per_combo": [],
+                "total_before_dedup": 0,
+                "total_after_dedup": 0,
+                "board_counts": {},
+                "possible_case_type_counts": {},
+                "failures": [],
+            }
+            with patch(
+                "scripts.ptt_stage1_pipeline.crawl_ptt_multi",
+                return_value=([], empty_summary),
+            ), patch(
+                "scripts.ptt_stage1_pipeline.commit_and_push_review_items"
+            ) as mock_git:
+                result = pipeline_main(
+                    [
+                        "--ptt-csv",
+                        str(ptt_csv),
+                        "--review-out-dir",
+                        str(review_dir),
+                        "--xref-output-dir",
+                        str(root / "xref"),
+                    ]
+                )
+            self.assertTrue(result.get("stopped"))
+            mock_git.assert_not_called()
+            self.assertNotIn("git", result)
+
+    def test_main_success_auto_commit_push(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            ptt_csv = root / "ptt_scam_cases.csv"
+            xref_dir = root / "xref"
+            review_dir = root / "ptt_candidates"
+            xref_dir.mkdir()
+            _write_csv(
+                ptt_csv,
+                ["title", "url", "content", "source", "published_at"],
+                [
+                    {
+                        "title": "t",
+                        "url": "https://www.ptt.cc/bbs/Bunco/M.1.html",
+                        "content": "c",
+                        "source": "ptt",
+                        "published_at": "Mon",
+                    }
+                ],
+            )
+            _write_csv(
+                xref_dir / "ptt_article1_status.csv",
+                ["title", "url", "content", "source", "published_at", "status"],
+                [
+                    {
+                        "title": "t",
+                        "url": "https://www.ptt.cc/bbs/Bunco/M.1.html",
+                        "content": "c",
+                        "source": "ptt",
+                        "published_at": "Mon",
+                        "status": "temp",
+                    }
+                ],
+            )
+            with patch(
+                "scripts.ptt_stage1_pipeline.commit_and_push_review_items",
+                return_value={
+                    "committed": True,
+                    "pushed": True,
+                    "reason": "ok",
+                    "path": "data/review/ptt_candidates/items.csv",
+                    "branch": "main",
+                },
+            ) as mock_git:
+                result = pipeline_main(
+                    [
+                        "--skip-crawl",
+                        "--skip-xref",
+                        "--ptt-csv",
+                        str(ptt_csv),
+                        "--xref-output-dir",
+                        str(xref_dir),
+                        "--review-out-dir",
+                        str(review_dir),
+                    ]
+                )
+            mock_git.assert_called_once()
+            self.assertTrue(result["git"]["pushed"])
+
+    def test_commit_and_push_helper_stages_only_items(self):
+        calls: list[list[str]] = []
+
+        def fake_run(cmd, check=False, **kwargs):
+            calls.append(list(cmd))
+            class Result:
+                returncode = 1 if cmd[:3] == ["git", "diff", "--cached"] else 0
+            if cmd[:2] == ["git", "diff"]:
+                return Result()
+            return Result()
+
+        with tempfile.TemporaryDirectory() as tmp:
+            items = Path(tmp) / "items.csv"
+            items.write_text("review_id\n1\n", encoding="utf-8")
+            with patch(
+                "scripts.ptt_stage1_pipeline.subprocess.run",
+                side_effect=fake_run,
+            ):
+                info = commit_and_push_review_items(items, branch="main")
+            self.assertTrue(info["committed"])
+            self.assertTrue(info["pushed"])
+            self.assertEqual(calls[0][:2], ["git", "add"])
+            self.assertIn("commit", calls[2])
+            self.assertEqual(calls[3], ["git", "push", "origin", "main"])
 
 
 if __name__ == "__main__":

@@ -15,6 +15,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -300,6 +301,7 @@ def print_pipeline_summary(result: dict) -> None:
     print(f"爬蟲文章：{summary.get('爬蟲文章', 0)}")
     if result.get("stopped"):
         print(summary.get("已停止") or result.get("stop_reason") or "已停止後續流程。")
+        print("note: 未更新 Review、未 commit、未 push")
         return
     print(f"exact_match：{summary.get('exact_match', 0)}")
     print(f"temp：{summary.get('temp', 0)}")
@@ -309,7 +311,56 @@ def print_pipeline_summary(result: dict) -> None:
     import_info = result.get("import") or {}
     if import_info.get("items_path"):
         print(f"items：{import_info['items_path']}")
-    print("note: 未修改 answers.json；未自動 commit / push / 開 PR")
+    git_info = result.get("git") or {}
+    if git_info.get("skipped"):
+        print(f"git：略過（{git_info.get('reason', 'skipped')}）")
+    elif git_info.get("pushed"):
+        print(f"git：已 commit 並 push 到 {git_info.get('branch', 'main')}")
+    elif git_info.get("committed") is False and git_info.get("reason") == "no_changes":
+        print("git：items.csv 無變更，略過 commit / push")
+    print("note: 未修改 answers.json")
+
+
+def commit_and_push_review_items(
+    items_path: str | Path,
+    *,
+    remote: str = "origin",
+    branch: str = "main",
+) -> dict:
+    """
+    將 Review items.csv commit 並 push 到 GitHub main，觸發 Render 部署。
+    只動這一個檔案；不碰 answers.json。
+    """
+    path = Path(items_path)
+    if not path.exists():
+        raise FileNotFoundError(f"找不到要推送的 Review items：{path}")
+
+    rel = path.as_posix()
+    subprocess.run(["git", "add", "--", rel], check=True)
+    diff = subprocess.run(
+        ["git", "diff", "--cached", "--quiet", "--", rel],
+        check=False,
+    )
+    if diff.returncode == 0:
+        return {
+            "committed": False,
+            "pushed": False,
+            "reason": "no_changes",
+            "path": rel,
+            "branch": branch,
+        }
+
+    message = "chore: update PTT review candidates from stage-1 pipeline"
+    subprocess.run(["git", "commit", "-m", message], check=True)
+    subprocess.run(["git", "push", remote, branch], check=True)
+    return {
+        "committed": True,
+        "pushed": True,
+        "reason": "ok",
+        "path": rel,
+        "branch": branch,
+        "message": message,
+    }
 
 
 def build_arg_parser() -> argparse.ArgumentParser:
@@ -354,7 +405,12 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--dry-run",
         action="store_true",
-        help="只列出將使用的設定，不執行爬蟲／比對／匯入",
+        help="只列出將使用的設定，不執行爬蟲／比對／匯入／push",
+    )
+    parser.add_argument(
+        "--no-push",
+        action="store_true",
+        help="跑完流程但不自動 commit / push（測試用）",
     )
     return parser
 
@@ -375,6 +431,8 @@ def main(argv: list[str] | None = None) -> dict | None:
         print(f"review_out_dir: {args.review_out_dir}")
         print(f"skip_crawl: {args.skip_crawl}")
         print(f"skip_xref: {args.skip_xref}")
+        print(f"no_push: {args.no_push}")
+        print("成功後會自動 commit/push items.csv 到 main（除非 --no-push）")
         return None
 
     result = run_stage1_pipeline(
@@ -388,6 +446,20 @@ def main(argv: list[str] | None = None) -> dict | None:
         skip_crawl=args.skip_crawl,
         skip_xref=args.skip_xref,
     )
+
+    if result.get("stopped"):
+        print_pipeline_summary(result)
+        return result
+
+    if args.no_push:
+        result["git"] = {"skipped": True, "reason": "no_push"}
+    else:
+        items_path = (result.get("import") or {}).get("items_path")
+        if not items_path:
+            result["git"] = {"skipped": True, "reason": "missing_items_path"}
+        else:
+            result["git"] = commit_and_push_review_items(items_path)
+
     print_pipeline_summary(result)
     return result
 
