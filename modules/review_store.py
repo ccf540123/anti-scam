@@ -1,13 +1,18 @@
-"""研究小組 Review 資料讀寫（PTT Temp 人工 Keyword 審查）。"""
+"""研究小組 Review 資料讀寫（PTT Temp 人工 Keyword 審查）。
+
+items.csv：GitHub / Render 提供候選文章
+answers：正式環境寫入 Supabase；未設定時本機可用檔案後備（僅開發／測試）
+"""
 
 from __future__ import annotations
 
 import csv
-import json
 import os
 import threading
 from datetime import datetime, timezone
 from pathlib import Path
+
+from modules import review_answers_store
 
 _lock = threading.Lock()
 
@@ -15,12 +20,13 @@ _lock = threading.Lock()
 class ReviewLockedError(Exception):
     """這篇文章已由組員完成審查，不可再覆寫。"""
 
+
 DEFAULT_PTT_ITEMS_CSV = os.path.join("data", "review", "ptt_candidates", "items.csv")
 DEFAULT_PTT_ANSWERS_PATH = os.path.join(
     "data", "review", "ptt_candidates", "answers.json"
 )
 
-# 向後相容別名：舊環境變數若仍指向 Fuzzy，改以 PTT 為正式預設
+# 向後相容別名
 DEFAULT_ITEMS_CSV = DEFAULT_PTT_ITEMS_CSV
 DEFAULT_ANSWERS_PATH = DEFAULT_PTT_ANSWERS_PATH
 
@@ -92,11 +98,14 @@ def get_dataset(dataset_id: str | None = None) -> dict:
     return DATASETS[key]
 
 
+def answers_storage_backend() -> str:
+    return "supabase" if review_answers_store.supabase_configured() else "local_file"
+
+
 def list_datasets() -> list[dict]:
     result = []
     for dataset in DATASETS.values():
         items_path = items_csv_path(dataset["id"])
-        answers = answers_path(dataset["id"])
         result.append(
             {
                 "id": dataset["id"],
@@ -105,7 +114,7 @@ def list_datasets() -> list[dict]:
                 "description": dataset["description"],
                 "has_items": items_path.exists(),
                 "items_path": str(items_path),
-                "answers_path": str(answers),
+                "answers_backend": answers_storage_backend(),
             }
         )
     return result
@@ -118,29 +127,26 @@ def items_csv_path(dataset_id: str | None = None) -> Path:
 
 
 def answers_path(dataset_id: str | None = None) -> Path:
+    """本機檔案後備路徑（僅未設定 Supabase 時使用）。"""
     dataset = get_dataset(dataset_id)
     configured = os.getenv(dataset["answers_env"], dataset["default_answers_path"])
     return _resolve_path(configured)
 
 
 def load_answers(dataset_id: str | None = None) -> dict:
-    path = answers_path(dataset_id)
-    if not path.exists():
-        return {}
-    with open(path, encoding="utf-8") as file:
-        data = json.load(file)
-    return data if isinstance(data, dict) else {}
+    dataset = get_dataset(dataset_id)
+    if review_answers_store.supabase_configured():
+        return review_answers_store.fetch_all_answers(dataset["id"])
+    return review_answers_store.load_answers_from_file(answers_path(dataset["id"]))
 
 
-def save_answers(answers: dict, dataset_id: str | None = None) -> None:
-    path = answers_path(dataset_id)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(path.suffix + ".tmp")
-    with open(tmp, "w", encoding="utf-8") as file:
-        json.dump(answers, file, ensure_ascii=False, indent=2)
-        file.flush()
-        os.fsync(file.fileno())
-    tmp.replace(path)
+def load_one_answer(review_id: str, dataset_id: str | None = None) -> dict:
+    dataset = get_dataset(dataset_id)
+    if review_answers_store.supabase_configured():
+        row = review_answers_store.fetch_one_answer(str(review_id), dataset["id"])
+        return row or {}
+    answers = review_answers_store.load_answers_from_file(answers_path(dataset["id"]))
+    return dict(answers.get(str(review_id)) or {})
 
 
 def is_review_locked(answer: dict) -> bool:
@@ -160,7 +166,6 @@ def normalize_keywords(value) -> list[str]:
         raw_parts = [str(item) for item in value]
     else:
         text = str(value).replace("\r\n", "\n").replace("\r", "\n")
-        # 相容：一行一個，或 | / 、 分隔
         text = text.replace("|", "\n").replace("、", "\n")
         raw_parts = text.split("\n")
     cleaned: list[str] = []
@@ -186,10 +191,9 @@ def derive_ptt_article_status(
 ) -> str:
     """
     人工 Review 後的 Article 1 狀態：
-      - 有任何手動 Keyword → 一律 temp（代表仍有後續研究價值）
+      - 有任何手動 Keyword → 一律 temp
       - 內容無相關 + URL 無相關/無連結 + 沒有 Keyword → non_match
-      - 其餘（尚未完成或未確認）→ temp
-    Keyword 只來自組員人工輸入；此函式不抽詞、不推薦。
+      - 其餘 → temp
     """
     cr = (content_relevant or "").strip()
     ur = (url_relevant or "").strip()
@@ -201,13 +205,6 @@ def derive_ptt_article_status(
 
 
 def is_ptt_temp_review_complete(item: dict) -> bool:
-    """
-    Temp Review 完成條件：
-      - 已選 content_relevant 與 url_relevant
-      - 若任一為「有」→ 必須手動填至少一個 Keyword
-      - 若兩者皆無相關：可完成；此時若有 Keyword，status 仍為 temp，
-        只有完全沒有 Keyword 才會是 non_match
-    """
     cr = (item.get("content_relevant") or "").strip()
     ur = (item.get("url_relevant") or "").strip()
     if not cr or not ur:
@@ -239,8 +236,6 @@ def _load_ptt_candidate_items(path: Path, answers: dict) -> list[dict]:
             review_id = str(row.get("review_id") or "").strip()
             if not review_id:
                 continue
-            # Article 1 / source CSV 的 exact_match 永遠不進 Temp Review。
-            # 必須以原始列為準，不可被 answers 舊資料覆寫成 temp。
             source_status = (row.get("status") or "temp").strip()
             if source_status == "exact_match":
                 continue
@@ -276,7 +271,6 @@ def load_review_items(dataset_id: str | None = None) -> list[dict]:
     dataset = get_dataset(dataset_id)
     path = items_csv_path(dataset["id"])
     if not path.exists():
-        # 尚未匯入時回空清單，讓 UI 提示執行 import / pipeline
         return []
 
     with _lock:
@@ -296,7 +290,6 @@ def progress_stats(items: list[dict], dataset_id: str | None = None) -> dict:
 
 
 def export_item_row(item: dict, dataset_id: str | None = None) -> dict:
-    """匯出用列：keywords 轉成可讀字串。"""
     row = dict(item)
     keywords = normalize_keywords(row.get("keywords"))
     row["keywords"] = keywords_to_export_text(keywords)
@@ -323,9 +316,7 @@ def upsert_answer(
     content_relevant = cleaned.get("content_relevant", "")
     url_relevant = cleaned.get("url_relevant", "")
     keywords = cleaned.get("keywords")
-    if keywords is None:
-        keywords = None
-    else:
+    if keywords is not None:
         cleaned["status"] = derive_ptt_article_status(
             content_relevant=content_relevant or "",
             url_relevant=url_relevant or "",
@@ -333,8 +324,7 @@ def upsert_answer(
         )
 
     with _lock:
-        answers = load_answers(dataset["id"])
-        current = dict(answers.get(str(review_id)) or {})
+        current = load_one_answer(str(review_id), dataset["id"])
         if is_review_locked(current):
             raise ReviewLockedError(
                 f"review_id={review_id} 已完成，請改審其他文章。"
@@ -370,6 +360,15 @@ def upsert_answer(
         current.update(cleaned)
         saved_at = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
         current["saved_at"] = saved_at
+
+        if review_answers_store.supabase_configured():
+            return review_answers_store.upsert_one_answer(
+                str(review_id), current, dataset["id"]
+            )
+
+        # 本機／測試後備：寫入檔案（不進 Git，非正式來源）
+        path = answers_path(dataset["id"])
+        answers = review_answers_store.load_answers_from_file(path)
         answers[str(review_id)] = current
-        save_answers(answers, dataset["id"])
+        review_answers_store.save_answers_to_file(answers, path)
         return current

@@ -8,10 +8,6 @@ services:
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --timeout 120
     healthCheckPath: /api/health
-    disk:
-      name: review-answers
-      mountPath: /var/data
-      sizeGB: 1
     envVars:
       - key: PYTHON_VERSION
         value: "3.12.10"
@@ -27,5 +23,7 @@ services:
         sync: false
       - key: FLASK_SECRET_KEY
         sync: false
-      - key: REVIEW_PTT_ANSWERS_PATH
-        value: /var/data/review/ptt_candidates/answers.json
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false

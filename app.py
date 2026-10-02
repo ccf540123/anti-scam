@@ -355,8 +355,12 @@ def api_review_save():
         return jsonify({"ok": True, "dataset": dataset_id, "answer": saved})
     except review_store.ReviewLockedError as exc:
         return jsonify({"error": str(exc), "locked": True}), 409
-    except Exception:
+    except Exception as exc:
         traceback.print_exc()
+        from modules.review_answers_store import ReviewAnswersBackendError
+
+        if isinstance(exc, ReviewAnswersBackendError):
+            return jsonify({"error": str(exc)}), 502
         return jsonify({"error": "存檔失敗"}), 500
 
 
