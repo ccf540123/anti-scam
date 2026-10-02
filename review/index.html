@@ -22,15 +22,10 @@
   <div id="appView" class="screen" hidden>
     <header class="topbar">
       <div>
-        <p class="eyebrow" id="datasetEyebrow">研究候選審查</p>
-        <h1 id="datasetHeading">一筆一筆標註</h1>
+        <p class="eyebrow" id="datasetEyebrow">PTT Temp 人工審查</p>
+        <h1 id="datasetHeading">一筆一筆手動抽 Keyword</h1>
       </div>
       <div class="topbar-actions">
-        <div class="dataset-switch" role="group" aria-label="選擇 Review 資料集">
-          <span class="dataset-label">資料集</span>
-          <button type="button" class="dataset-btn active" data-dataset="fuzzy" id="datasetFuzzyBtn">Fuzzy 候選</button>
-          <button type="button" class="dataset-btn" data-dataset="ptt_candidate" id="datasetPttBtn">PTT Temp</button>
-        </div>
         <button id="exportBtn" type="button" class="btn">匯出 CSV</button>
         <button id="logoutBtn" type="button" class="btn ghost">登出</button>
       </div>
@@ -39,15 +34,15 @@
     <section class="progress-panel">
       <div class="progress-copy">
         <strong id="progressText">已完成 0 / 0</strong>
-        <span id="progressHint">選擇資料集後開始標註</span>
+        <span id="progressHint">閱讀後勾選相關性，並手動輸入 Keyword</span>
       </div>
       <div class="progress-track" aria-hidden="true"><span id="progressBar"></span></div>
     </section>
 
     <div id="emptyState" class="empty-state" hidden>
-      <h2>這個資料集還沒有文章</h2>
-      <p id="emptyStateHint">請先用匯入指令挑選 PTT Temp 候選文章後再來審查。</p>
-      <pre id="emptyStateCmd" class="empty-cmd">python run_import_ptt_review.py --limit 20</pre>
+      <h2>還沒有 Temp 候選文章</h2>
+      <p id="emptyStateHint">請先執行第一階段 pipeline，把 temp 文章匯入後再來審查。</p>
+      <pre id="emptyStateCmd" class="empty-cmd">python run_ptt_pipeline.py</pre>
     </div>
 
     <main id="reviewMain" class="layout">
@@ -62,15 +57,11 @@
             <dt>來源日期</dt>
             <dd id="itemDate">—</dd>
           </div>
-          <div id="shortMeta" data-fuzzy-only>
-            <dt>短網址</dt>
-            <dd><a id="shortLink" href="#" target="_blank" rel="noopener" class="break-url">—</a></dd>
-          </div>
-          <div id="boardMeta" data-ptt-only hidden>
+          <div>
             <dt>看板</dt>
             <dd id="itemBoard">—</dd>
           </div>
-          <div id="keywordMeta" data-ptt-only hidden>
+          <div>
             <dt>搜尋關鍵字</dt>
             <dd id="itemKeyword">—</dd>
           </div>
@@ -81,8 +72,7 @@
         </dl>
 
         <div class="link-actions">
-          <a id="openShortBtn" class="btn primary" href="#" target="_blank" rel="noopener" data-fuzzy-only>開短網址看目的地</a>
-          <a id="openArticleBtn" class="btn" href="#" target="_blank" rel="noopener">開 PTT 原文</a>
+          <a id="openArticleBtn" class="btn primary" href="#" target="_blank" rel="noopener">開 PTT 原文</a>
         </div>
 
         <div class="content-block">
@@ -95,43 +85,7 @@
       </article>
 
       <aside class="panel annotate-panel">
-        <div id="fuzzyAnnotate" data-fuzzy-only>
-          <h3>這筆要標什麼？</h3>
-          <p class="annotate-help">只判斷「短網址導到的目的地」，不是整篇文章貼 scam 標籤。</p>
-
-          <fieldset>
-            <legend>1. 有沒有成功打開目的地？</legend>
-            <div class="choice-grid" data-field="destination_opened">
-              <button type="button" data-value="yes">有打開</button>
-              <button type="button" data-value="no">打不開</button>
-              <button type="button" data-value="skip">先跳過</button>
-            </div>
-          </fieldset>
-
-          <fieldset>
-            <legend>2. 目的地類型</legend>
-            <div class="choice-grid wrap" data-field="destination_type">
-              <button type="button" data-value="新聞">新聞</button>
-              <button type="button" data-value="政府或防詐宣導">政府／防詐宣導</button>
-              <button type="button" data-value="社群平台">社群平台</button>
-              <button type="button" data-value="疑似詐騙站">疑似詐騙站</button>
-              <button type="button" data-value="短網址失效">短網址失效</button>
-              <button type="button" data-value="其他">其他</button>
-              <button type="button" data-value="不確定">不確定</button>
-            </div>
-          </fieldset>
-
-          <fieldset>
-            <legend>3. 目的地本身是不是詐騙站？</legend>
-            <div class="choice-grid" data-field="is_scam_related_destination">
-              <button type="button" data-value="yes">是（詐騙落地頁）</button>
-              <button type="button" data-value="no">否（新聞／宣導等）</button>
-              <button type="button" data-value="unsure">不確定</button>
-            </div>
-          </fieldset>
-        </div>
-
-        <div id="pttAnnotate" data-ptt-only hidden>
+        <div id="pttAnnotate">
           <h3>Temp 人工檢查</h3>
           <p class="annotate-help">
             組員閱讀文章與 URL 後，自行判斷是否值得繼續追查，並<strong>手動輸入</strong> Keyword。
@@ -173,7 +127,7 @@
         </div>
 
         <label for="humanNotes">備註</label>
-        <textarea id="humanNotes" rows="3" placeholder="補充說明…"></textarea>
+        <textarea id="humanNotes" rows="3" placeholder="例如：偏宣導、可再確認…"></textarea>
 
         <label for="reviewerInput">檢視者</label>
         <input id="reviewerInput" type="text" placeholder="例如：小陳">

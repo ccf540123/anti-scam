@@ -107,37 +107,8 @@ class TestReviewMultiDataset(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory()
         root = Path(self.tmp.name)
 
-        self.fuzzy_csv = root / "fuzzy_items.csv"
-        self.fuzzy_answers = root / "fuzzy_answers.json"
         self.ptt_csv = root / "ptt_items.csv"
         self.ptt_answers = root / "ptt_answers.json"
-
-        self.fuzzy_csv.write_text(
-            "\n".join(
-                [
-                    "review_id,shortener_host,title,article_url,published_at,extracted_url,normalized_url,match_reason,review_status,destination_opened,destination_type,is_scam_related_destination,human_notes,reviewer",
-                    "1,reurl.cc,[新聞] 測試,https://www.ptt.cc/bbs/Bunco/M.1.html,Mon Jan 1,https://reurl.cc/abc,reurl.cc/abc,shortener,pending,,,,,",
-                ]
-            ),
-            encoding="utf-8-sig",
-        )
-        # 預先寫一筆 Fuzzy 標註，確認不會被 PTT 存檔蓋掉
-        self.fuzzy_answers.write_text(
-            json.dumps(
-                {
-                    "1": {
-                        "destination_opened": "yes",
-                        "destination_type": "新聞",
-                        "is_scam_related_destination": "no",
-                        "human_notes": "keep-me",
-                        "reviewer": "alice",
-                        "review_status": "reviewed",
-                    }
-                },
-                ensure_ascii=False,
-            ),
-            encoding="utf-8",
-        )
 
         with open(self.ptt_csv, "w", encoding="utf-8-sig", newline="") as file:
             writer = csv.DictWriter(
@@ -182,8 +153,6 @@ class TestReviewMultiDataset(unittest.TestCase):
             os.environ,
             {
                 "REVIEW_PASSWORD": "test-review-pass",
-                "REVIEW_ITEMS_CSV": str(self.fuzzy_csv),
-                "REVIEW_ANSWERS_PATH": str(self.fuzzy_answers),
                 "REVIEW_PTT_ITEMS_CSV": str(self.ptt_csv),
                 "REVIEW_PTT_ANSWERS_PATH": str(self.ptt_answers),
             },
@@ -203,17 +172,11 @@ class TestReviewMultiDataset(unittest.TestCase):
         response = self.client.get("/api/review/datasets")
         self.assertEqual(response.status_code, 200)
         ids = {d["id"] for d in response.get_json()["datasets"]}
-        self.assertEqual(ids, {"fuzzy", "ptt_candidate"})
+        self.assertEqual(ids, {"ptt_candidate"})
 
-    def test_fuzzy_items_still_load_with_existing_answers(self):
+    def test_fuzzy_dataset_removed(self):
         response = self.client.get("/api/review/items?dataset=fuzzy")
-        self.assertEqual(response.status_code, 200)
-        payload = response.get_json()
-        self.assertEqual(payload["dataset"]["id"], "fuzzy")
-        self.assertEqual(len(payload["items"]), 1)
-        item = payload["items"][0]
-        self.assertEqual(item["destination_type"], "新聞")
-        self.assertEqual(item["human_notes"], "keep-me")
+        self.assertEqual(response.status_code, 400)
 
     def test_ptt_temp_keyword_save_and_reload(self):
         items = self.client.get("/api/review/items?dataset=ptt_candidate")
@@ -254,11 +217,6 @@ class TestReviewMultiDataset(unittest.TestCase):
         reloaded = self.client.get("/api/review/items?dataset=ptt_candidate").get_json()
         self.assertEqual(reloaded["items"][0]["keywords"], ["假投資", "要求匯款"])
         self.assertEqual(reloaded["progress"]["done"], 1)
-
-        # Fuzzy answers 未被覆蓋
-        fuzzy_answers = review_store.load_answers("fuzzy")
-        self.assertEqual(fuzzy_answers["1"]["human_notes"], "keep-me")
-        self.assertEqual(fuzzy_answers["1"]["destination_type"], "新聞")
 
     def test_ptt_non_match_when_no_useful_info(self):
         items = self.client.get("/api/review/items?dataset=ptt_candidate").get_json()["items"]

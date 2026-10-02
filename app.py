@@ -285,9 +285,9 @@ def _review_dataset_id() -> str:
     raw = (
         request.args.get("dataset")
         or (request.get_json(silent=True) or {}).get("dataset")
-        or "fuzzy"
+        or "ptt_candidate"
     )
-    return str(raw).strip() or "fuzzy"
+    return str(raw).strip() or "ptt_candidate"
 
 
 @app.route("/api/review/session", methods=["GET"])
@@ -345,7 +345,7 @@ def api_review_save():
     review_id = data.get("review_id")
     if review_id is None or str(review_id).strip() == "":
         return jsonify({"error": "缺少 review_id"}), 400
-    dataset_id = str(data.get("dataset") or "fuzzy").strip() or "fuzzy"
+    dataset_id = str(data.get("dataset") or "ptt_candidate").strip() or "ptt_candidate"
     try:
         review_store.get_dataset(dataset_id)
     except KeyError as exc:

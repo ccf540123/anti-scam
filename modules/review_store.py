@@ -1,4 +1,4 @@
-"""研究小組 Review 資料讀寫（不改動原始研究 CSV / Fuzzy 資料）。"""
+"""研究小組 Review 資料讀寫（PTT Temp 人工 Keyword 審查）。"""
 
 from __future__ import annotations
 
@@ -10,39 +10,16 @@ from pathlib import Path
 
 _lock = threading.Lock()
 
-DEFAULT_FUZZY_ITEMS_CSV = os.path.join(
-    "data",
-    "review",
-    "run_20260930_dual_source",
-    "176455_fuzzy_manual_review.csv",
-)
-DEFAULT_FUZZY_ANSWERS_PATH = os.path.join(
-    "data",
-    "review",
-    "run_20260930_dual_source",
-    "fuzzy_manual_answers.json",
-)
 DEFAULT_PTT_ITEMS_CSV = os.path.join("data", "review", "ptt_candidates", "items.csv")
 DEFAULT_PTT_ANSWERS_PATH = os.path.join(
     "data", "review", "ptt_candidates", "answers.json"
 )
-PTT_CASES_CSV = "ptt_scam_cases.csv"
 
-# 向後相容：舊環境變數仍對應 Fuzzy dataset
-DEFAULT_ITEMS_CSV = DEFAULT_FUZZY_ITEMS_CSV
-DEFAULT_ANSWERS_PATH = DEFAULT_FUZZY_ANSWERS_PATH
+# 向後相容別名：舊環境變數若仍指向 Fuzzy，改以 PTT 為正式預設
+DEFAULT_ITEMS_CSV = DEFAULT_PTT_ITEMS_CSV
+DEFAULT_ANSWERS_PATH = DEFAULT_PTT_ANSWERS_PATH
 
-# Fuzzy：短網址目的地標註
-FUZZY_ANSWER_FIELDS = [
-    "destination_opened",
-    "destination_type",
-    "is_scam_related_destination",
-    "human_notes",
-    "reviewer",
-    "review_status",
-]
-
-# PTT Temp 候選：人工相關性 + 手動多 Keyword（非 article_type）
+# PTT Temp 候選：人工相關性 + 手動多 Keyword
 PTT_ANSWER_FIELDS = [
     "content_relevant",
     "url_relevant",
@@ -55,38 +32,9 @@ PTT_ANSWER_FIELDS = [
     "article_type",
 ]
 
-# 舊名稱相容
-ANSWER_FIELDS = FUZZY_ANSWER_FIELDS
+ANSWER_FIELDS = PTT_ANSWER_FIELDS
 
 DATASETS = {
-    "fuzzy": {
-        "id": "fuzzy",
-        "label": "Fuzzy 候選文章",
-        "kind": "fuzzy",
-        "description": "既有 Fuzzy／短網址候選，標註目的地",
-        "default_items_csv": DEFAULT_FUZZY_ITEMS_CSV,
-        "default_answers_path": DEFAULT_FUZZY_ANSWERS_PATH,
-        "items_env": "REVIEW_ITEMS_CSV",
-        "answers_env": "REVIEW_ANSWERS_PATH",
-        "answer_fields": FUZZY_ANSWER_FIELDS,
-        "export_filename": "176455_fuzzy_manual_review.csv",
-        "export_fields": [
-            "review_id",
-            "shortener_host",
-            "title",
-            "article_url",
-            "published_at",
-            "extracted_url",
-            "normalized_url",
-            "match_reason",
-            "review_status",
-            "destination_opened",
-            "destination_type",
-            "is_scam_related_destination",
-            "human_notes",
-            "reviewer",
-        ],
-    },
     "ptt_candidate": {
         "id": "ptt_candidate",
         "label": "PTT Temp 候選",
@@ -133,7 +81,7 @@ def _resolve_path(configured: str) -> Path:
 
 
 def get_dataset(dataset_id: str | None = None) -> dict:
-    key = (dataset_id or "fuzzy").strip() or "fuzzy"
+    key = (dataset_id or "ptt_candidate").strip() or "ptt_candidate"
     if key not in DATASETS:
         raise KeyError(f"未知 dataset：{key}")
     return DATASETS[key]
@@ -170,20 +118,6 @@ def answers_path(dataset_id: str | None = None) -> Path:
     return _resolve_path(configured)
 
 
-def load_ptt_content_by_url() -> dict[str, str]:
-    """Fuzzy review 備援：從 RAG 用 CSV 對正文（不修改該檔）。"""
-    path = _project_path(PTT_CASES_CSV)
-    mapping: dict[str, str] = {}
-    if not path.exists():
-        return mapping
-    with open(path, encoding="utf-8-sig", newline="") as file:
-        for row in csv.DictReader(file):
-            url = (row.get("url") or "").strip()
-            if url and url not in mapping:
-                mapping[url] = row.get("content") or ""
-    return mapping
-
-
 def load_answers(dataset_id: str | None = None) -> dict:
     path = answers_path(dataset_id)
     if not path.exists():
@@ -196,7 +130,7 @@ def load_answers(dataset_id: str | None = None) -> dict:
 def save_answers(answers: dict, dataset_id: str | None = None) -> None:
     path = answers_path(dataset_id)
     path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(".json.tmp")
+    tmp = path.with_suffix(path.suffix + ".tmp")
     with open(tmp, "w", encoding="utf-8") as file:
         json.dump(answers, file, ensure_ascii=False, indent=2)
     tmp.replace(path)
@@ -282,44 +216,6 @@ def _merge_answer_fields(row: dict, answer: dict, fields: list[str]) -> dict:
     return merged
 
 
-def _load_fuzzy_items(path: Path, answers: dict) -> list[dict]:
-    content_map = load_ptt_content_by_url()
-    items: list[dict] = []
-    with open(path, encoding="utf-8-sig", newline="") as file:
-        for row in csv.DictReader(file):
-            review_id = str(row.get("review_id") or "").strip()
-            if not review_id:
-                continue
-            article_url = (row.get("article_url") or "").strip()
-            answer = answers.get(review_id) or {}
-            fields = _merge_answer_fields(row, answer, FUZZY_ANSWER_FIELDS)
-            items.append(
-                {
-                    "review_id": int(review_id) if review_id.isdigit() else review_id,
-                    "dataset_id": "fuzzy",
-                    "dataset_type": "fuzzy",
-                    "shortener_host": row.get("shortener_host") or "",
-                    "title": row.get("title") or "",
-                    "article_url": article_url,
-                    "published_at": row.get("published_at") or "",
-                    "extracted_url": row.get("extracted_url") or "",
-                    "normalized_url": row.get("normalized_url") or "",
-                    "match_reason": row.get("match_reason") or "",
-                    "content": content_map.get(article_url, ""),
-                    "source_board": "",
-                    "search_keyword": "",
-                    "article_type": "",
-                    **fields,
-                }
-            )
-    items.sort(
-        key=lambda item: int(item["review_id"])
-        if str(item["review_id"]).isdigit()
-        else 0
-    )
-    return items
-
-
 def _load_ptt_candidate_items(path: Path, answers: dict) -> list[dict]:
     items: list[dict] = []
     with open(path, encoding="utf-8-sig", newline="") as file:
@@ -351,13 +247,6 @@ def _load_ptt_candidate_items(path: Path, answers: dict) -> list[dict]:
                     "source_board": row.get("source_board") or "",
                     "search_keyword": row.get("search_keyword") or "",
                     "imported_at": row.get("imported_at") or "",
-                    "shortener_host": "",
-                    "extracted_url": "",
-                    "normalized_url": "",
-                    "match_reason": "",
-                    "destination_opened": "",
-                    "destination_type": "",
-                    "is_scam_related_destination": "",
                     **fields,
                 }
             )
@@ -369,28 +258,17 @@ def load_review_items(dataset_id: str | None = None) -> list[dict]:
     dataset = get_dataset(dataset_id)
     path = items_csv_path(dataset["id"])
     if not path.exists():
-        if dataset["id"] == "ptt_candidate":
-            # 尚未匯入時回空清單，讓 UI 提示執行 import
-            return []
-        raise FileNotFoundError(f"找不到 review CSV：{path}")
+        # 尚未匯入時回空清單，讓 UI 提示執行 import / pipeline
+        return []
 
     with _lock:
         answers = load_answers(dataset["id"])
 
-    if dataset["kind"] == "ptt_candidate":
-        return _load_ptt_candidate_items(path, answers)
-    return _load_fuzzy_items(path, answers)
+    return _load_ptt_candidate_items(path, answers)
 
 
 def is_item_filled(item: dict, dataset_id: str | None = None) -> bool:
-    kind = (dataset_id or item.get("dataset_id") or item.get("dataset_type") or "fuzzy")
-    if kind == "ptt_candidate":
-        return is_ptt_temp_review_complete(item)
-    return bool(
-        (item.get("destination_opened") or "").strip()
-        or (item.get("destination_type") or "").strip()
-        or (item.get("is_scam_related_destination") or "").strip()
-    )
+    return is_ptt_temp_review_complete(item)
 
 
 def progress_stats(items: list[dict], dataset_id: str | None = None) -> dict:
@@ -401,13 +279,11 @@ def progress_stats(items: list[dict], dataset_id: str | None = None) -> dict:
 
 def export_item_row(item: dict, dataset_id: str | None = None) -> dict:
     """匯出用列：keywords 轉成可讀字串。"""
-    kind = dataset_id or item.get("dataset_id") or item.get("dataset_type") or "fuzzy"
     row = dict(item)
-    if kind == "ptt_candidate":
-        keywords = normalize_keywords(row.get("keywords"))
-        row["keywords"] = keywords_to_export_text(keywords)
-        row["article_id"] = row.get("article_id") or row.get("review_id")
-        row["url"] = row.get("url") or row.get("article_url") or ""
+    keywords = normalize_keywords(row.get("keywords"))
+    row["keywords"] = keywords_to_export_text(keywords)
+    row["article_id"] = row.get("article_id") or row.get("review_id")
+    row["url"] = row.get("url") or row.get("article_url") or ""
     return row
 
 
@@ -418,81 +294,57 @@ def upsert_answer(
     fields = dataset["answer_fields"]
     cleaned = {}
 
-    if dataset["kind"] == "ptt_candidate":
-        for field in fields:
-            if field not in payload or payload[field] is None:
-                continue
-            if field == "keywords":
-                cleaned["keywords"] = normalize_keywords(payload[field])
-            else:
-                cleaned[field] = str(payload[field]).strip()
-
-        content_relevant = cleaned.get("content_relevant", "")
-        url_relevant = cleaned.get("url_relevant", "")
-        keywords = cleaned.get("keywords")
-        if keywords is None:
-            # 若這次 payload 沒帶 keywords，稍後與 current 合併再算
-            keywords = None
-        else:
-            cleaned["status"] = derive_ptt_article_status(
-                content_relevant=content_relevant or "",
-                url_relevant=url_relevant or "",
-                keywords=keywords,
-            )
-
-        with _lock:
-            answers = load_answers(dataset["id"])
-            current = dict(answers.get(str(review_id)) or {})
-            if "keywords" not in cleaned and "keywords" in current:
-                keywords = normalize_keywords(current.get("keywords"))
-            elif keywords is None:
-                keywords = normalize_keywords(current.get("keywords"))
-            else:
-                keywords = cleaned["keywords"]
-
-            merged_content = cleaned.get(
-                "content_relevant", current.get("content_relevant", "")
-            )
-            merged_url = cleaned.get("url_relevant", current.get("url_relevant", ""))
-            cleaned["keywords"] = keywords
-            cleaned["status"] = derive_ptt_article_status(
-                content_relevant=str(merged_content or ""),
-                url_relevant=str(merged_url or ""),
-                keywords=keywords,
-            )
-
-            probe = {
-                "content_relevant": merged_content,
-                "url_relevant": merged_url,
-                "keywords": keywords,
-            }
-            if not cleaned.get("review_status"):
-                cleaned["review_status"] = (
-                    "reviewed" if is_ptt_temp_review_complete(probe) else "pending"
-                )
-
-            current.update(cleaned)
-            answers[str(review_id)] = current
-            save_answers(answers, dataset["id"])
-            return current
-
     for field in fields:
-        if field in payload and payload[field] is not None:
+        if field not in payload or payload[field] is None:
+            continue
+        if field == "keywords":
+            cleaned["keywords"] = normalize_keywords(payload[field])
+        else:
             cleaned[field] = str(payload[field]).strip()
 
-    if not cleaned.get("review_status"):
-        if (
-            cleaned.get("destination_opened")
-            or cleaned.get("destination_type")
-            or cleaned.get("is_scam_related_destination")
-        ):
-            cleaned["review_status"] = "reviewed"
-        else:
-            cleaned["review_status"] = "pending"
+    content_relevant = cleaned.get("content_relevant", "")
+    url_relevant = cleaned.get("url_relevant", "")
+    keywords = cleaned.get("keywords")
+    if keywords is None:
+        keywords = None
+    else:
+        cleaned["status"] = derive_ptt_article_status(
+            content_relevant=content_relevant or "",
+            url_relevant=url_relevant or "",
+            keywords=keywords,
+        )
 
     with _lock:
         answers = load_answers(dataset["id"])
         current = dict(answers.get(str(review_id)) or {})
+        if "keywords" not in cleaned and "keywords" in current:
+            keywords = normalize_keywords(current.get("keywords"))
+        elif keywords is None:
+            keywords = normalize_keywords(current.get("keywords"))
+        else:
+            keywords = cleaned["keywords"]
+
+        merged_content = cleaned.get(
+            "content_relevant", current.get("content_relevant", "")
+        )
+        merged_url = cleaned.get("url_relevant", current.get("url_relevant", ""))
+        cleaned["keywords"] = keywords
+        cleaned["status"] = derive_ptt_article_status(
+            content_relevant=str(merged_content or ""),
+            url_relevant=str(merged_url or ""),
+            keywords=keywords,
+        )
+
+        probe = {
+            "content_relevant": merged_content,
+            "url_relevant": merged_url,
+            "keywords": keywords,
+        }
+        if not cleaned.get("review_status"):
+            cleaned["review_status"] = (
+                "reviewed" if is_ptt_temp_review_complete(probe) else "pending"
+            )
+
         current.update(cleaned)
         answers[str(review_id)] = current
         save_answers(answers, dataset["id"])
