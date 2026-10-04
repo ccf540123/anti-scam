@@ -1,0 +1,147 @@
+{
+  "boards": [
+    "Bunco",
+    "e-shopping",
+    "Bank_Service"
+  ],
+  "keywords": [
+    "詐騙",
+    "被騙",
+    "匯款"
+  ],
+  "pages": 10,
+  "combinations": [
+    {
+      "board": "Bunco",
+      "keyword": "詐騙"
+    },
+    {
+      "board": "Bunco",
+      "keyword": "被騙"
+    },
+    {
+      "board": "Bunco",
+      "keyword": "匯款"
+    },
+    {
+      "board": "e-shopping",
+      "keyword": "詐騙"
+    },
+    {
+      "board": "e-shopping",
+      "keyword": "被騙"
+    },
+    {
+      "board": "e-shopping",
+      "keyword": "匯款"
+    },
+    {
+      "board": "Bank_Service",
+      "keyword": "詐騙"
+    },
+    {
+      "board": "Bank_Service",
+      "keyword": "被騙"
+    },
+    {
+      "board": "Bank_Service",
+      "keyword": "匯款"
+    }
+  ],
+  "per_combo": [
+    {
+      "board": "Bunco",
+      "keyword": "詐騙",
+      "raw_listings": 200,
+      "fetch_success": 200,
+      "pages_fetched": 10,
+      "failed": false,
+      "error": ""
+    },
+    {
+      "board": "Bunco",
+      "keyword": "被騙",
+      "raw_listings": 200,
+      "fetch_success": 200,
+      "pages_fetched": 10,
+      "failed": false,
+      "error": ""
+    },
+    {
+      "board": "Bunco",
+      "keyword": "匯款",
+      "raw_listings": 127,
+      "fetch_success": 127,
+      "pages_fetched": 7,
+      "failed": false,
+      "error": ""
+    },
+    {
+      "board": "e-shopping",
+      "keyword": "詐騙",
+      "raw_listings": 200,
+      "fetch_success": 200,
+      "pages_fetched": 10,
+      "failed": false,
+      "error": ""
+    },
+    {
+      "board": "e-shopping",
+      "keyword": "被騙",
+      "raw_listings": 22,
+      "fetch_success": 21,
+      "pages_fetched": 2,
+      "failed": false,
+      "error": ""
+    },
+    {
+      "board": "e-shopping",
+      "keyword": "匯款",
+      "raw_listings": 52,
+      "fetch_success": 52,
+      "pages_fetched": 3,
+      "failed": false,
+      "error": ""
+    },
+    {
+      "board": "Bank_Service",
+      "keyword": "詐騙",
+      "raw_listings": 174,
+      "fetch_success": 174,
+      "pages_fetched": 9,
+      "failed": false,
+      "error": ""
+    },
+    {
+      "board": "Bank_Service",
+      "keyword": "被騙",
+      "raw_listings": 11,
+      "fetch_success": 11,
+      "pages_fetched": 1,
+      "failed": false,
+      "error": ""
+    },
+    {
+      "board": "Bank_Service",
+      "keyword": "匯款",
+      "raw_listings": 200,
+      "fetch_success": 200,
+      "pages_fetched": 10,
+      "failed": false,
+      "error": ""
+    }
+  ],
+  "total_before_dedup": 1185,
+  "total_after_dedup": 1175,
+  "board_counts": {
+    "Bank_Service": 384,
+    "Bunco": 518,
+    "e-shopping": 273
+  },
+  "possible_case_type_counts": {
+    "possible_personal_case": 709,
+    "possible_news_or_awareness": 204,
+    "unknown": 262
+  },
+  "failures": []
+}

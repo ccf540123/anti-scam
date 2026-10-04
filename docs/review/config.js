@@ -11,9 +11,9 @@
     研究小組共同進入密碼（前端可見，只是簡易門檻；真正資料保護靠 RLS）
 */
 window.REVIEW_CONFIG = {
-  SUPABASE_URL: "https://YOUR_PROJECT.supabase.co",
-  SUPABASE_ANON_KEY: "YOUR_SUPABASE_ANON_PUBLIC_KEY",
-  REVIEW_PASSWORD: "change_me_research_group_password",
+  SUPABASE_URL: "https://telxfakoomkscqzhqgto.supabase.co",
+  SUPABASE_ANON_KEY: "sb_publishable_mp3XIM9dNud_vAceBmJzuQ_FN7_pTBr",
+  REVIEW_PASSWORD: "123456789",
   ITEMS_CSV_URL: "items.csv",
   DATASET_ID: "ptt_candidate",
 };
