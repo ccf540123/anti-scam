@@ -581,13 +581,18 @@ class TestRunStage1Pipeline(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             items = Path(tmp) / "items.csv"
             items.write_text("review_id\n1\n", encoding="utf-8")
+            pages = Path(tmp) / "docs" / "review" / "items.csv"
             with patch(
                 "scripts.ptt_stage1_pipeline.subprocess.run",
                 side_effect=fake_run,
+            ), patch(
+                "scripts.ptt_stage1_pipeline.PAGES_REVIEW_ITEMS_CSV",
+                pages,
             ):
                 info = commit_and_push_review_items(items, branch="main")
             self.assertTrue(info["committed"])
             self.assertTrue(info["pushed"])
+            self.assertTrue(pages.exists())
             self.assertEqual(calls[0][:2], ["git", "add"])
             self.assertIn("commit", calls[2])
             self.assertEqual(calls[3], ["git", "push", "origin", "main"])

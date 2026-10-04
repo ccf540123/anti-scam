@@ -1,5 +1,6 @@
--- PTT Temp Review answers（多人共用永久儲存）
--- 在 Supabase Dashboard → SQL Editor 執行整段即可。
+-- PTT Temp Review answers（GitHub Pages 前端 + Supabase）
+-- 在 Supabase Dashboard → SQL Editor 執行整段。
+-- 若 table 已存在，也可只跑下方 RLS 區塊。
 
 create table if not exists public.ptt_review_answers (
   review_id text primary key,
@@ -22,7 +23,37 @@ create index if not exists ptt_review_answers_dataset_idx
 create index if not exists ptt_review_answers_review_status_idx
   on public.ptt_review_answers (review_status);
 
--- 後端用 service role key 存取；關閉匿名讀寫
 alter table public.ptt_review_answers enable row level security;
 
--- 不建立 anon/authenticated policy：僅 service_role 可透過 API key 存取
+-- 前端只用 anon key；允許讀取全部答案
+drop policy if exists "ptt_review_answers_anon_select" on public.ptt_review_answers;
+create policy "ptt_review_answers_anon_select"
+  on public.ptt_review_answers
+  for select
+  to anon
+  using (true);
+
+-- 允許新增（未審文章第一次儲存）
+drop policy if exists "ptt_review_answers_anon_insert" on public.ptt_review_answers;
+create policy "ptt_review_answers_anon_insert"
+  on public.ptt_review_answers
+  for insert
+  to anon
+  with check (true);
+
+-- 僅允許更新「尚未 reviewed」的列（已完成鎖定）
+drop policy if exists "ptt_review_answers_anon_update_unlocked" on public.ptt_review_answers;
+create policy "ptt_review_answers_anon_update_unlocked"
+  on public.ptt_review_answers
+  for update
+  to anon
+  using (coalesce(review_status, '') <> 'reviewed')
+  with check (true);
+
+-- 禁止 anon 刪除
+drop policy if exists "ptt_review_answers_anon_delete" on public.ptt_review_answers;
+create policy "ptt_review_answers_anon_delete"
+  on public.ptt_review_answers
+  for delete
+  to anon
+  using (false);

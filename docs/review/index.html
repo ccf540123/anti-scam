@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>研究小組 Review</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="loginView" class="screen">
+    <div class="login-card">
+      <p class="eyebrow">Anti-scam research</p>
+      <h1>研究小組審查</h1>
+      <p class="lead">請輸入共同密碼。儲存後寫入 Supabase，全組共用同一份進度（不依賴 Render）。</p>
+      <label for="passwordInput">共同密碼</label>
+      <input id="passwordInput" type="password" autocomplete="current-password" placeholder="輸入密碼">
+      <button id="loginBtn" type="button" class="btn primary wide">進入審查</button>
+      <p id="loginError" class="error" hidden></p>
+    </div>
+  </div>
+
+  <div id="appView" class="screen" hidden>
+    <header class="topbar">
+      <div>
+        <p class="eyebrow" id="datasetEyebrow">PTT Temp 人工審查</p>
+        <h1 id="datasetHeading">一筆一筆手動抽 Keyword</h1>
+      </div>
+      <div class="topbar-actions">
+        <button id="refreshBtn" type="button" class="btn">重新載入進度</button>
+        <button id="logoutBtn" type="button" class="btn ghost">登出</button>
+      </div>
+    </header>
+
+    <section class="progress-panel">
+      <div class="progress-copy">
+        <strong id="progressText">總共 0 篇 · 已完成 0 · 剩 0</strong>
+        <span id="progressHint">請先填檢視者姓名，完成後按「儲存」</span>
+      </div>
+      <div class="progress-track" aria-hidden="true"><span id="progressBar"></span></div>
+    </section>
+
+    <div id="emptyState" class="empty-state" hidden>
+      <h2>還沒有 Temp 候選文章</h2>
+      <p id="emptyStateHint">請先執行第一階段 pipeline，把 temp 文章同步到 GitHub Pages 後再來審查。</p>
+      <pre id="emptyStateCmd" class="empty-cmd">python run_ptt_pipeline.py</pre>
+    </div>
+
+    <main id="reviewMain" class="layout">
+      <article class="panel read-panel">
+        <div class="meta-row">
+          <span class="pill" id="itemId">#-</span>
+          <span class="pill soft" id="hostPill">-</span>
+          <span class="pill done" id="donePill" hidden>已完成</span>
+        </div>
+        <p id="doneByLine" class="done-by" hidden></p>
+        <h2 id="itemTitle">載入中…</h2>
+        <dl class="meta-grid">
+          <div>
+            <dt>來源日期</dt>
+            <dd id="itemDate">—</dd>
+          </div>
+          <div>
+            <dt>看板</dt>
+            <dd id="itemBoard">—</dd>
+          </div>
+          <div>
+            <dt>搜尋關鍵字</dt>
+            <dd id="itemKeyword">—</dd>
+          </div>
+          <div>
+            <dt>PTT 文章</dt>
+            <dd><a id="articleLink" href="#" target="_blank" rel="noopener" class="break-url">—</a></dd>
+          </div>
+        </dl>
+
+        <div class="link-actions">
+          <a id="openArticleBtn" class="btn primary" href="#" target="_blank" rel="noopener">開 PTT 原文</a>
+        </div>
+
+        <div class="content-block">
+          <div class="content-head">
+            <h3>文章內容</h3>
+            <span class="muted">可捲動閱讀</span>
+          </div>
+          <div id="itemContent" class="content-body">（此筆沒有對到正文，請改看 PTT 原文）</div>
+        </div>
+      </article>
+
+      <aside class="panel annotate-panel">
+        <div id="pttAnnotate">
+          <h3>Temp 人工檢查</h3>
+          <p class="annotate-help">
+            組員閱讀文章與 URL 後，自行判斷是否值得繼續追查，並<strong>手動輸入</strong> Keyword。
+            程式不會自動抽詞或判斷。
+          </p>
+          <p id="lockedNotice" class="locked-notice" hidden>
+            這篇已由其他組員完成，請按「下一筆未填」改審其他文章。
+          </p>
+
+          <fieldset>
+            <legend>1. 文章內容是否包含詐騙相關資訊？</legend>
+            <div class="choice-grid" data-field="content_relevant">
+              <button type="button" data-value="yes">有</button>
+              <button type="button" data-value="no">沒有</button>
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend>2. 文章中的 URL 是否包含詐騙相關資訊？</legend>
+            <div class="choice-grid" data-field="url_relevant">
+              <button type="button" data-value="yes">有</button>
+              <button type="button" data-value="no">沒有</button>
+              <button type="button" data-value="none">無 URL</button>
+            </div>
+          </fieldset>
+
+          <label for="keywordsInput">3. 手動輸入 Keyword（每行一個）</label>
+          <p class="annotate-help">
+            這些詞之後會拿去第二階段搜尋 PTT。請組員自己輸入，例如：假投資、虛擬貨幣、要求匯款。
+            若前面選「有」，至少填一個 Keyword。有填任何 Keyword 時一律保持 temp；只有「內容無相關 + URL 無相關 + 無 Keyword」才會存成 non_match。
+          </p>
+          <textarea
+            id="keywordsInput"
+            rows="5"
+            placeholder="假投資&#10;虛擬貨幣&#10;要求匯款"
+          ></textarea>
+
+          <p class="status-pill-row">
+            目前狀態：
+            <span class="pill soft" id="pttStatusPill">temp</span>
+          </p>
+        </div>
+
+        <label for="humanNotes">備註</label>
+        <textarea id="humanNotes" rows="3" placeholder="例如：偏宣導、可再確認…"></textarea>
+
+        <label for="reviewerInput">檢視者（必填後再儲存）</label>
+        <input id="reviewerInput" type="text" placeholder="例如：小陳">
+
+        <p id="saveStatus" class="save-status" aria-live="polite"></p>
+
+        <div class="nav-row">
+          <button id="prevBtn" type="button" class="btn">上一筆</button>
+          <button id="jumpBtn" type="button" class="btn">下一筆未填</button>
+          <button id="saveBtn" type="button" class="btn primary">儲存</button>
+          <button id="nextBtn" type="button" class="btn">儲存並下一筆未填</button>
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

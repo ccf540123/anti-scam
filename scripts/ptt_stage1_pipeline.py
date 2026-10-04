@@ -15,6 +15,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import shutil
 import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
@@ -43,6 +44,17 @@ DEFAULT_CSV_176455 = "data/raw/NPA_WEBURL_20260930.csv"
 DEFAULT_CSV_160055 = "data/raw/NPA_FAKE_INVEST_20260930.csv"
 DEFAULT_XREF_OUTPUT_DIR = "data/review/run_stage1_pipeline"
 DEFAULT_PAGES = 10
+PAGES_REVIEW_ITEMS_CSV = Path("docs/review/items.csv")
+
+
+def sync_items_csv_to_github_pages(items_path: str | Path) -> Path:
+    """把 Review items 同步到 docs/review/，供 GitHub Pages 靜態讀取。"""
+    src = Path(items_path)
+    if not src.exists():
+        raise FileNotFoundError(f"找不到 Review items：{src}")
+    PAGES_REVIEW_ITEMS_CSV.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(src, PAGES_REVIEW_ITEMS_CSV)
+    return PAGES_REVIEW_ITEMS_CSV
 
 
 def load_article1_status_rows(path: Path) -> list[dict]:
@@ -328,17 +340,19 @@ def commit_and_push_review_items(
     branch: str = "main",
 ) -> dict:
     """
-    將 Review items.csv commit 並 push 到 GitHub main，觸發 Render 部署。
-    只動這一個檔案；不碰 answers.json。
+    將 Review items.csv（含 GitHub Pages 副本）commit 並 push 到 main。
+    不碰 answers（answers 只在 Supabase）。
     """
     path = Path(items_path)
     if not path.exists():
         raise FileNotFoundError(f"找不到要推送的 Review items：{path}")
 
+    pages_path = sync_items_csv_to_github_pages(path)
     rel = path.as_posix()
-    subprocess.run(["git", "add", "--", rel], check=True)
+    pages_rel = pages_path.as_posix()
+    subprocess.run(["git", "add", "--", rel, pages_rel], check=True)
     diff = subprocess.run(
-        ["git", "diff", "--cached", "--quiet", "--", rel],
+        ["git", "diff", "--cached", "--quiet", "--", rel, pages_rel],
         check=False,
     )
     if diff.returncode == 0:
@@ -347,10 +361,11 @@ def commit_and_push_review_items(
             "pushed": False,
             "reason": "no_changes",
             "path": rel,
+            "pages_path": pages_rel,
             "branch": branch,
         }
 
-    message = "chore: update PTT review candidates from stage-1 pipeline"
+    message = "chore: update PTT review candidates for GitHub Pages"
     subprocess.run(["git", "commit", "-m", message], check=True)
     subprocess.run(["git", "push", remote, branch], check=True)
     return {
@@ -358,6 +373,7 @@ def commit_and_push_review_items(
         "pushed": True,
         "reason": "ok",
         "path": rel,
+        "pages_path": pages_rel,
         "branch": branch,
         "message": message,
     }
