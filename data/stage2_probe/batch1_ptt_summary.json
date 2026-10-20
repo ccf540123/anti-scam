@@ -1,0 +1,241 @@
+{
+  "boards": [
+    "Bunco",
+    "e-shopping"
+  ],
+  "keywords": [
+    "網購詐騙",
+    "一頁式廣告",
+    "一頁式詐騙",
+    "假客服",
+    "假冒客服",
+    "三方詐騙",
+    "FB詐騙",
+    "幽靈包裹"
+  ],
+  "pages": 2,
+  "combinations": [
+    {
+      "board": "Bunco",
+      "keyword": "網購詐騙"
+    },
+    {
+      "board": "Bunco",
+      "keyword": "一頁式廣告"
+    },
+    {
+      "board": "Bunco",
+      "keyword": "一頁式詐騙"
+    },
+    {
+      "board": "Bunco",
+      "keyword": "假客服"
+    },
+    {
+      "board": "Bunco",
+      "keyword": "假冒客服"
+    },
+    {
+      "board": "Bunco",
+      "keyword": "三方詐騙"
+    },
+    {
+      "board": "Bunco",
+      "keyword": "FB詐騙"
+    },
+    {
+      "board": "Bunco",
+      "keyword": "幽靈包裹"
+    },
+    {
+      "board": "e-shopping",
+      "keyword": "網購詐騙"
+    },
+    {
+      "board": "e-shopping",
+      "keyword": "一頁式廣告"
+    },
+    {
+      "board": "e-shopping",
+      "keyword": "一頁式詐騙"
+    },
+    {
+      "board": "e-shopping",
+      "keyword": "假客服"
+    },
+    {
+      "board": "e-shopping",
+      "keyword": "假冒客服"
+    },
+    {
+      "board": "e-shopping",
+      "keyword": "三方詐騙"
+    },
+    {
+      "board": "e-shopping",
+      "keyword": "FB詐騙"
+    },
+    {
+      "board": "e-shopping",
+      "keyword": "幽靈包裹"
+    }
+  ],
+  "per_combo": [
+    {
+      "board": "Bunco",
+      "keyword": "網購詐騙",
+      "raw_listings": 5,
+      "fetch_success": 5,
+      "pages_fetched": 1,
+      "failed": false,
+      "error": ""
+    },
+    {
+      "board": "Bunco",
+      "keyword": "一頁式廣告",
+      "raw_listings": 0,
+      "fetch_success": 0,
+      "pages_fetched": 1,
+      "failed": false,
+      "error": ""
+    },
+    {
+      "board": "Bunco",
+      "keyword": "一頁式詐騙",
+      "raw_listings": 3,
+      "fetch_success": 3,
+      "pages_fetched": 1,
+      "failed": false,
+      "error": ""
+    },
+    {
+      "board": "Bunco",
+      "keyword": "假客服",
+      "raw_listings": 1,
+      "fetch_success": 1,
+      "pages_fetched": 1,
+      "failed": false,
+      "error": ""
+    },
+    {
+      "board": "Bunco",
+      "keyword": "假冒客服",
+      "raw_listings": 1,
+      "fetch_success": 1,
+      "pages_fetched": 1,
+      "failed": false,
+      "error": ""
+    },
+    {
+      "board": "Bunco",
+      "keyword": "三方詐騙",
+      "raw_listings": 5,
+      "fetch_success": 5,
+      "pages_fetched": 1,
+      "failed": false,
+      "error": ""
+    },
+    {
+      "board": "Bunco",
+      "keyword": "FB詐騙",
+      "raw_listings": 0,
+      "fetch_success": 0,
+      "pages_fetched": 1,
+      "failed": false,
+      "error": ""
+    },
+    {
+      "board": "Bunco",
+      "keyword": "幽靈包裹",
+      "raw_listings": 3,
+      "fetch_success": 3,
+      "pages_fetched": 1,
+      "failed": false,
+      "error": ""
+    },
+    {
+      "board": "e-shopping",
+      "keyword": "網購詐騙",
+      "raw_listings": 6,
+      "fetch_success": 6,
+      "pages_fetched": 1,
+      "failed": false,
+      "error": ""
+    },
+    {
+      "board": "e-shopping",
+      "keyword": "一頁式廣告",
+      "raw_listings": 1,
+      "fetch_success": 1,
+      "pages_fetched": 1,
+      "failed": false,
+      "error": ""
+    },
+    {
+      "board": "e-shopping",
+      "keyword": "一頁式詐騙",
+      "raw_listings": 4,
+      "fetch_success": 4,
+      "pages_fetched": 1,
+      "failed": false,
+      "error": ""
+    },
+    {
+      "board": "e-shopping",
+      "keyword": "假客服",
+      "raw_listings": 0,
+      "fetch_success": 0,
+      "pages_fetched": 1,
+      "failed": false,
+      "error": ""
+    },
+    {
+      "board": "e-shopping",
+      "keyword": "假冒客服",
+      "raw_listings": 0,
+      "fetch_success": 0,
+      "pages_fetched": 1,
+      "failed": false,
+      "error": ""
+    },
+    {
+      "board": "e-shopping",
+      "keyword": "三方詐騙",
+      "raw_listings": 3,
+      "fetch_success": 3,
+      "pages_fetched": 1,
+      "failed": false,
+      "error": ""
+    },
+    {
+      "board": "e-shopping",
+      "keyword": "FB詐騙",
+      "raw_listings": 2,
+      "fetch_success": 2,
+      "pages_fetched": 1,
+      "failed": false,
+      "error": ""
+    },
+    {
+      "board": "e-shopping",
+      "keyword": "幽靈包裹",
+      "raw_listings": 1,
+      "fetch_success": 1,
+      "pages_fetched": 1,
+      "failed": false,
+      "error": ""
+    }
+  ],
+  "total_before_dedup": 35,
+  "total_after_dedup": 35,
+  "board_counts": {
+    "Bunco": 18,
+    "e-shopping": 17
+  },
+  "possible_case_type_counts": {
+    "possible_personal_case": 17,
+    "possible_news_or_awareness": 5,
+    "unknown": 13
+  },
+  "failures": []
+}
