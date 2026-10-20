@@ -26,9 +26,36 @@
   let dirty = false;
   let refreshTimer = null;
   let supabase = null;
-  const datasetId = cfg.DATASET_ID || "ptt_candidate";
+  const DATASETS = {
+    ptt_candidate: {
+      id: "ptt_candidate",
+      eyebrow: "第一階段 Temp 審查",
+      heading: "一筆一筆手動抽 Keyword",
+      itemsUrl: cfg.ITEMS_CSV_URL || "items.csv",
+      mode: "stage1",
+    },
+    ptt_stage2_keyword: {
+      id: cfg.STAGE2_DATASET_ID || "ptt_stage2_keyword",
+      eyebrow: "第二階段 Keyword 審查",
+      heading: "依 A／B／C 人工審查",
+      itemsUrl: cfg.STAGE2_ITEMS_CSV_URL || "stage2_items.csv",
+      mode: "stage2",
+    },
+  };
+  const DATASET_SESSION_KEY = "ptt_review_dataset_v1";
+  let datasetId = sessionStorage.getItem(DATASET_SESSION_KEY) || cfg.DATASET_ID || "ptt_candidate";
+  if (!DATASETS[datasetId]) datasetId = "ptt_candidate";
   const REFRESH_MS = 45000;
   const SESSION_KEY = "ptt_review_auth_v1";
+  const GRADES = ["A", "B", "C"];
+
+  function currentDataset() {
+    return DATASETS[datasetId];
+  }
+
+  function isStage2() {
+    return currentDataset().mode === "stage2";
+  }
 
   function configReady() {
     return !!(
@@ -115,6 +142,9 @@
 
   function isFilled(item) {
     if (!item) return false;
+    if (isStage2()) {
+      return GRADES.indexOf((item.content_relevant || "").trim()) >= 0;
+    }
     const cr = (item.content_relevant || "").trim();
     const ur = (item.url_relevant || "").trim();
     if (!cr || !ur) return false;
@@ -132,14 +162,27 @@
   }
 
   function updateProgress() {
-    const done = items.filter(isFilled).length;
     const total = items.length;
+    const done = items.filter(isFilled).length;
     const remaining = Math.max(total - done, 0);
-    document.getElementById("progressText").textContent =
-      "總共 " + total + " 篇 · 已完成 " + done + " · 剩 " + remaining;
-    let hint = "按「儲存」後寫入 Supabase，全組共用";
+    if (isStage2()) {
+      const grades = { A: 0, B: 0, C: 0 };
+      items.forEach(function (item) {
+        const grade = (item.content_relevant || "").trim();
+        if (grades[grade] !== undefined) grades[grade] += 1;
+      });
+      document.getElementById("progressText").textContent =
+        "總共 " + total + " 篇 · 已審查 " + done + " · 未審查 " + remaining +
+        " · A " + grades.A + " · B " + grades.B + " · C " + grades.C;
+    } else {
+      document.getElementById("progressText").textContent =
+        "總共 " + total + " 篇 · 已完成 " + done + " · 剩 " + remaining;
+    }
+    let hint = isStage2()
+      ? "A／B／C 與備註寫入 Supabase 的第二階段分類，不會改到第一階段"
+      : "按「儲存」後寫入 Supabase，全組共用";
     if (dirty) hint = "有未儲存變更，請先按「儲存」";
-    if (!total) hint = "尚未匯入 PTT Temp 候選";
+    if (!total) hint = isStage2() ? "尚未載入第二階段清單" : "尚未匯入 PTT Temp 候選";
     document.getElementById("progressHint").textContent = hint;
     const pct = total ? Math.round((done / total) * 100) : 0;
     document.getElementById("progressBar").style.width = pct + "%";
@@ -178,10 +221,14 @@
       '.choice-grid[data-field="url_relevant"] button.active'
     );
     const keywords = parseKeywordsText(keywordsInput ? keywordsInput.value : "");
+    const gradeBtn = document.querySelector(
+      '.choice-grid[data-field="grade"] button.active'
+    );
     return {
       content_relevant: contentBtn ? contentBtn.getAttribute("data-value") : "",
       url_relevant: urlBtn ? urlBtn.getAttribute("data-value") : "",
       keywords: keywords,
+      grade: gradeBtn ? gradeBtn.getAttribute("data-value") : "",
       human_notes: humanNotes.value.trim(),
       reviewer: reviewerInput.value.trim(),
     };
@@ -191,6 +238,16 @@
     const item = currentItem();
     const form = collectForm();
     if (!item || !form) return;
+    if (isStage2()) {
+      item.content_relevant = form.grade;
+      item.url_relevant = "";
+      item.keywords = [];
+      item.status = "stage2";
+      item.human_notes = form.human_notes;
+      item.reviewer = form.reviewer;
+      item.review_status = isFilled(item) ? "reviewed" : "pending";
+      return;
+    }
     item.content_relevant = form.content_relevant;
     item.url_relevant = form.url_relevant;
     item.keywords = form.keywords;
@@ -250,6 +307,19 @@
     document.getElementById("itemDate").textContent = item.published_at || "—";
     document.getElementById("itemBoard").textContent = item.source_board || "—";
     document.getElementById("itemKeyword").textContent = item.search_keyword || "—";
+    const stage1Pill = document.getElementById("stage1Pill");
+    const pttAnnotate = document.getElementById("pttAnnotate");
+    const stage2Annotate = document.getElementById("stage2Annotate");
+    if (pttAnnotate) pttAnnotate.hidden = isStage2();
+    if (stage2Annotate) stage2Annotate.hidden = !isStage2();
+    if (isStage2()) {
+      stage1Pill.hidden = false;
+      stage1Pill.textContent = item.stage1_flag || "新文章";
+      stage1Pill.classList.toggle("warn", item.stage1_flag === "第一階段已存在");
+      setChoice("grade", GRADES.indexOf(item.content_relevant) >= 0 ? item.content_relevant : "");
+    } else if (stage1Pill) {
+      stage1Pill.hidden = true;
+    }
 
     const articleLink = document.getElementById("articleLink");
     const openArticleBtn = document.getElementById("openArticleBtn");
@@ -326,7 +396,7 @@
   }
 
   function loadItemsCsv() {
-    const url = cfg.ITEMS_CSV_URL || "items.csv";
+    const url = currentDataset().itemsUrl;
     return new Promise(function (resolve, reject) {
       if (!window.Papa) {
         reject(new Error("PapaParse 尚未載入"));
@@ -382,6 +452,8 @@
         source: row.source || "ptt",
         source_board: row.source_board || "",
         search_keyword: row.search_keyword || "",
+        stage1_flag: row.stage1_flag || "",
+        sort_order: row.sort_order || "",
         imported_at: row.imported_at || "",
         saved_at: answer.saved_at || "",
         review_locked: false,
@@ -390,9 +462,15 @@
       item.review_locked = isLocked(item);
       merged.push(item);
     });
-    merged.sort(function (a, b) {
-      return String(a.review_id).localeCompare(String(b.review_id));
-    });
+    if (isStage2()) {
+      merged.sort(function (a, b) {
+        return Number(a.sort_order || 0) - Number(b.sort_order || 0);
+      });
+    } else {
+      merged.sort(function (a, b) {
+        return String(a.review_id).localeCompare(String(b.review_id));
+      });
+    }
     return merged;
   }
 
@@ -430,6 +508,14 @@
       saveStatus.textContent = "請先填「檢視者」再儲存";
       return false;
     }
+    if (isStage2() && GRADES.indexOf(form.grade) < 0) {
+      saveStatus.textContent = "請先選 A、B 或 C 再儲存";
+      return false;
+    }
+    if (isStage2() && String(item.review_id).indexOf("ptt2_") !== 0) {
+      saveStatus.textContent = "這筆不是第二階段編號，已停止儲存";
+      return false;
+    }
 
     applyLocalFormToItem();
     updateProgress();
@@ -443,33 +529,46 @@
         return false;
       }
 
-      const status = deriveLocalPttStatus(
-        form.content_relevant,
-        form.url_relevant,
-        form.keywords
-      );
-      const reviewStatus = isFilled({
-        content_relevant: form.content_relevant,
-        url_relevant: form.url_relevant,
-        keywords: form.keywords,
-      })
-        ? "reviewed"
-        : "pending";
       const savedAt = new Date().toISOString();
-      const payload = {
-        review_id: item.review_id,
-        dataset_id: datasetId,
-        content_relevant: form.content_relevant || "",
-        url_relevant: form.url_relevant || "",
-        keywords: form.keywords || [],
-        status: status,
-        human_notes: form.human_notes || "",
-        reviewer: form.reviewer || "",
-        review_status: reviewStatus,
-        article_type: item.article_type || "",
-        saved_at: savedAt,
-        updated_at: savedAt,
-      };
+      const payload = isStage2()
+        ? {
+            review_id: item.review_id,
+            dataset_id: datasetId,
+            content_relevant: form.grade,
+            url_relevant: "",
+            keywords: [],
+            status: "stage2",
+            human_notes: form.human_notes || "",
+            reviewer: form.reviewer || "",
+            review_status: "reviewed",
+            article_type: "",
+            saved_at: savedAt,
+            updated_at: savedAt,
+          }
+        : {
+            review_id: item.review_id,
+            dataset_id: datasetId,
+            content_relevant: form.content_relevant || "",
+            url_relevant: form.url_relevant || "",
+            keywords: form.keywords || [],
+            status: deriveLocalPttStatus(
+              form.content_relevant,
+              form.url_relevant,
+              form.keywords
+            ),
+            human_notes: form.human_notes || "",
+            reviewer: form.reviewer || "",
+            review_status: isFilled({
+              content_relevant: form.content_relevant,
+              url_relevant: form.url_relevant,
+              keywords: form.keywords,
+            })
+              ? "reviewed"
+              : "pending",
+            article_type: item.article_type || "",
+            saved_at: savedAt,
+            updated_at: savedAt,
+          };
 
       const client = getClient();
       const { data, error } = await client
@@ -510,7 +609,44 @@
     }, REFRESH_MS);
   }
 
+  function applyDatasetChrome() {
+    const ds = currentDataset();
+    document.getElementById("datasetEyebrow").textContent = ds.eyebrow;
+    document.getElementById("datasetHeading").textContent = ds.heading;
+    document.querySelectorAll(".dataset-btn").forEach(function (btn) {
+      btn.classList.toggle("active", btn.getAttribute("data-dataset") === datasetId);
+    });
+    const hint = document.getElementById("emptyStateHint");
+    const cmd = document.getElementById("emptyStateCmd");
+    const emptyTitle = emptyState ? emptyState.querySelector("h2") : null;
+    if (isStage2()) {
+      if (emptyTitle) emptyTitle.textContent = "還沒有第二階段文章";
+      if (hint) hint.textContent = "第二階段清單是 stage2_items.csv，與第一階段 items.csv 分開。";
+      if (cmd) cmd.hidden = true;
+    } else {
+      if (emptyTitle) emptyTitle.textContent = "還沒有 Temp 候選文章";
+      if (hint) hint.textContent = "請先執行第一階段 pipeline，把 temp 文章同步到 GitHub Pages 後再來審查。";
+      if (cmd) cmd.hidden = false;
+    }
+  }
+
+  async function switchDataset(nextId) {
+    if (!DATASETS[nextId] || nextId === datasetId) return;
+    if (dirty) {
+      const ok = window.confirm("有未儲存變更，切換分類會捨棄本機編輯。繼續？");
+      if (!ok) return;
+      dirty = false;
+    }
+    datasetId = nextId;
+    sessionStorage.setItem(DATASET_SESSION_KEY, datasetId);
+    index = 0;
+    items = [];
+    applyDatasetChrome();
+    await reloadItems({ silent: true });
+  }
+
   async function enterApp() {
+    applyDatasetChrome();
     await reloadItems({ silent: true });
     showApp();
     startAutoRefresh();
@@ -557,6 +693,14 @@
     setAuthed(false);
     items = [];
     showLogin();
+  });
+
+  document.querySelectorAll(".dataset-btn").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      switchDataset(btn.getAttribute("data-dataset")).catch(function (err) {
+        saveStatus.textContent = "切換失敗：" + (err.message || err);
+      });
+    });
   });
 
   document.querySelectorAll(".choice-grid").forEach(function (grid) {

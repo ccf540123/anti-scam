@@ -28,4 +28,6 @@ window.REVIEW_CONFIG = {
   REVIEW_PASSWORD: "123456789",
   ITEMS_CSV_URL: "items.csv",
   DATASET_ID: "ptt_candidate",
+  STAGE2_ITEMS_CSV_URL: "stage2_items.csv",
+  STAGE2_DATASET_ID: "ptt_stage2_keyword",
 };

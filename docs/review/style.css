@@ -263,6 +263,11 @@ textarea { resize: vertical; min-height: 84px; }
   font-weight: 650;
 }
 
+.pill.warn {
+  background: #fff4ec;
+  color: var(--warn);
+}
+
 .done-by,
 .locked-notice {
   margin: 0.35rem 0 0.75rem;

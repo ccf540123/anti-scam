@@ -22,8 +22,12 @@
   <div id="appView" class="screen" hidden>
     <header class="topbar">
       <div>
-        <p class="eyebrow" id="datasetEyebrow">PTT Temp 人工審查</p>
+        <p class="eyebrow" id="datasetEyebrow">第一階段 Temp 審查</p>
         <h1 id="datasetHeading">一筆一筆手動抽 Keyword</h1>
+        <nav class="dataset-switch" aria-label="審查分類">
+          <button type="button" class="dataset-btn active" data-dataset="ptt_candidate">第一階段 Temp 審查</button>
+          <button type="button" class="dataset-btn" data-dataset="ptt_stage2_keyword">第二階段 Keyword 審查</button>
+        </nav>
       </div>
       <div class="topbar-actions">
         <button id="refreshBtn" type="button" class="btn">重新載入進度</button>
@@ -50,6 +54,7 @@
         <div class="meta-row">
           <span class="pill" id="itemId">#-</span>
           <span class="pill soft" id="hostPill">-</span>
+          <span class="pill warn" id="stage1Pill" hidden>第一階段已存在</span>
           <span class="pill done" id="donePill" hidden>已完成</span>
         </div>
         <p id="doneByLine" class="done-by" hidden></p>
@@ -129,6 +134,24 @@
             目前狀態：
             <span class="pill soft" id="pttStatusPill">temp</span>
           </p>
+        </div>
+
+        <div id="stage2Annotate" hidden>
+          <h3>第二階段 Keyword 審查</h3>
+          <p class="annotate-help">
+            A：值得保留（受害經驗、求助、交易糾紛、具體詐騙情境或手法）<br>
+            B：相關但價值有限（新聞、宣導、一般討論）<br>
+            C：無關
+          </p>
+          <p class="annotate-help">不要只因標題有 [新聞]、[問題] 或 [閒聊] 就選 C。這不是正式案例標籤，程式不會自動填 A／B／C。</p>
+          <fieldset>
+            <legend>人工審查</legend>
+            <div class="choice-grid" data-field="grade">
+              <button type="button" data-value="A">A 值得保留</button>
+              <button type="button" data-value="B">B 價值有限</button>
+              <button type="button" data-value="C">C 無關</button>
+            </div>
+          </fieldset>
         </div>
 
         <label for="humanNotes">備註</label>
