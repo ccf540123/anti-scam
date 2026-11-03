@@ -1,0 +1,100 @@
+{
+  "source_file": "data/raw/NPA_WEBURL_20260930.csv",
+  "source_field": "網站性質",
+  "unit": "CSV 列數",
+  "snapshot_date": "2026-09-30",
+  "row_total": 83323,
+  "unique_host_total": 75625,
+  "hosts_with_multiple_types": 205,
+  "counts": [
+    {
+      "type": "金融保險",
+      "rows": 47347
+    },
+    {
+      "type": "電子商務",
+      "rows": 23352
+    },
+    {
+      "type": "資訊服務",
+      "rows": 6846
+    },
+    {
+      "type": "運輸倉儲",
+      "rows": 4578
+    },
+    {
+      "type": "政府機構與國營事業",
+      "rows": 430
+    },
+    {
+      "type": "釣魚網站",
+      "rows": 288
+    },
+    {
+      "type": "抽獎博弈",
+      "rows": 149
+    },
+    {
+      "type": "醫療保健",
+      "rows": 91
+    },
+    {
+      "type": "金融保健",
+      "rows": 66
+    },
+    {
+      "type": "虛擬通貨",
+      "rows": 54
+    },
+    {
+      "type": "電信業",
+      "rows": 44
+    },
+    {
+      "type": "賣場商品",
+      "rows": 29
+    },
+    {
+      "type": "期貨",
+      "rows": 18
+    },
+    {
+      "type": "假交友網站",
+      "rows": 11
+    },
+    {
+      "type": "外匯",
+      "rows": 8
+    },
+    {
+      "type": "不詳",
+      "rows": 6
+    },
+    {
+      "type": "股票",
+      "rows": 2
+    },
+    {
+      "type": "金融保線",
+      "rows": 2
+    },
+    {
+      "type": "金融投資",
+      "rows": 1
+    },
+    {
+      "type": "假貸款網站",
+      "rows": 1
+    }
+  ],
+  "runtime_blacklist_file": "scam_165_urls.csv",
+  "runtime_blacklist_hosts": 52675,
+  "runtime_blacklist_has_website_type": false,
+  "stage1_articles_exact_host_in_npa": 0,
+  "stage2_articles_exact_host_in_npa": 0,
+  "stage1_articles_exact_host_in_165": 0,
+  "stage2_articles_exact_host_in_165": 0,
+  "stage1_articles_checked": 1190,
+  "stage2_articles_checked": 116
+}

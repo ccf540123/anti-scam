@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>詐騙資料分析</title>
+  <link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+  <div id="loginView" class="login-wrap">
+    <form id="loginForm" class="login-card">
+      <p class="eyebrow">Anti-scam research</p>
+      <h1>資料分析</h1>
+      <p class="lead">與審查頁同一組密碼。這裡只讀取清單與已儲存的答案，不會寫入審查結果。</p>
+      <label for="passwordInput">共同密碼</label>
+      <input id="passwordInput" type="password" autocomplete="current-password">
+      <button type="submit" class="btn primary">進入儀表板</button>
+      <p id="loginError" class="error" hidden></p>
+      <p><a href="index.html">回到審查</a></p>
+    </form>
+  </div>
+
+  <div id="appView" hidden>
+    <header class="top">
+      <div>
+        <p class="eyebrow">Scam Analysis Dashboard</p>
+        <h1>詐騙資料分析</h1>
+      </div>
+      <div class="top-actions">
+        <a class="btn" href="index.html">回到審查</a>
+        <button id="reloadBtn" type="button" class="btn">重新讀取</button>
+      </div>
+    </header>
+
+    <p id="loadError" class="error" hidden></p>
+    <p id="loading" class="lead">正在讀取清單與審查答案…</p>
+
+    <div id="dashboard" hidden>
+      <nav class="section-nav" aria-label="儀表板區塊">
+        <a href="#progress">審查進度</a>
+        <a href="#judgments">已完成審查</a>
+        <a href="#keywords">Keyword</a>
+        <a href="#stage2">第二階段</a>
+        <a href="#npa">165 名單</a>
+        <a href="#quality">資料品質</a>
+      </nav>
+
+      <div class="layout">
+        <main>
+          <section id="progress">
+            <h2>1. 審查進度</h2>
+            <p class="caption">第一階段清單是 items.csv。完成的定義與審查頁相同：內容與 URL 都已填，且任一項選「有」時至少有一個 keyword。未完成不是 Clean。第二階段清單是 stage2_items.csv；A／B／C 另計，沒有答案就顯示尚未審查。</p>
+            <div class="stat-grid" id="progressStats"></div>
+          </section>
+
+          <section id="judgments">
+            <h2>2. 第一階段已完成審查</h2>
+            <p class="caption">只統計已完成的文章。內容「有／沒有」來自 content_relevant，URL 來自 url_relevant，status 來自已儲存的 temp／non_match。這不是 Spam／Clean，也不包含未審查文章。</p>
+            <div class="chart-grid" id="judgmentCharts"></div>
+          </section>
+
+          <section id="keywords">
+            <h2>3. 人工 Keyword</h2>
+            <p class="caption">只計算已完成審查、由人寫進 Supabase keywords 的詞。同一篇文章裡的重複詞只算一次。這不是全文自動斷詞，也不能代表未審查文章。</p>
+            <h3>詞雲（次數最高的 40 個）</h3>
+            <div id="wordCloud" class="cloud"></div>
+            <h3>TOP 20</h3>
+            <div id="keywordBars"></div>
+          </section>
+
+          <section id="stage2">
+            <h2>4. 第二階段 8 個 Keyword</h2>
+            <p class="caption">文章數來自 stage2_items.csv 的 search_keyword，以「、」拆開後精確比對。新文章與第一階段已存在來自 stage1_flag，比對的是網址是否已在第一階段 CSV。A／B／C 只看第二階段答案，不會拿第一階段的「有／沒有」來填。</p>
+            <p id="stage2ReviewLine" class="review-line"></p>
+            <div id="priorityChart"></div>
+          </section>
+
+          <section id="npa">
+            <h2>5. 官方 165 名單的網站性質</h2>
+            <p class="caption" id="npaCaption"></p>
+            <div id="npaChart"></div>
+          </section>
+
+          <section id="quality">
+            <h2>6. 資料品質</h2>
+            <p class="caption">重複與跨階段重疊都以文章 URL 正規化後比較：去掉網址尾端斜線、忽略 fragment，主機名稱轉成小寫。Keyword 重疊是指同一篇文章有兩個以上的詞，不是把各詞的篇數相加。</p>
+            <div class="stat-grid" id="qualityStats"></div>
+            <h3>看板分布</h3>
+            <p class="caption">單位是清單裡的篇數，表示資料從哪個看板來，不是文章品質。</p>
+            <div class="chart-grid">
+              <div>
+                <h3>第一階段清單</h3>
+                <div id="boardStage1"></div>
+              </div>
+              <div>
+                <h3>第二階段清單</h3>
+                <div id="boardStage2"></div>
+              </div>
+            </div>
+          </section>
+        </main>
+
+        <aside id="explorer" class="explorer">
+          <h2 id="explorerTitle">文章探索</h2>
+          <p id="explorerMeta" class="caption">點圖表或數字，這裡列出對應文章。</p>
+          <div id="explorerList"></div>
+          <div id="explorerPager" class="pager"></div>
+        </aside>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script src="config.js"></script>
+  <script src="dashboard.js"></script>
+</body>
+</html>
