@@ -17,6 +17,18 @@
   let selection = null;
   let page = 0;
   let supabase = null;
+  let chartInstances = [];
+  let activeView = "overview";
+  const VIEW_TITLES = {
+    overview: "總覽",
+    progress: "審查進度",
+    judgments: "第一階段審查",
+    keywords: "人工 Keyword",
+    stage2: "第二階段 Keyword",
+    npa: "165 官方名單",
+    quality: "資料品質",
+  };
+  const PALETTE = ["#5eead4", "#60a5fa", "#fbbf24", "#fb7185", "#a78bfa", "#34d399", "#fb923c", "#38bdf8", "#f472b6", "#a3e635"];
 
   function canon(url) {
     const raw = String(url || "").trim();
@@ -231,15 +243,95 @@
     model.selections[id] = { id: id, title: title, rows: rows, note: note || "" };
   }
 
-  function barList(pairs, idPrefix, unit) {
-    const max = pairs.reduce(function (best, pair) { return Math.max(best, pair[1].length); }, 1);
-    return pairs.map(function (pair) {
-      const id = idPrefix + pair[0];
-      remember(id, pair[0], pair[1], unit);
-      const width = Math.max(2, Math.round((pair[1].length / max) * 100));
-      const selected = selectedId() === id ? " is-selected" : "";
-      return '<button type="button" class="bar' + selected + '" data-select="' + id + '"><span>' + pair[0] + '</span><span class="track"><span class="fill" style="width:' + width + '%"></span></span><b>' + pair[1].length + '</b></button>';
-    }).join("");
+  function destroyCharts() {
+    chartInstances.forEach(function (chart) { chart.destroy(); });
+    chartInstances = [];
+  }
+
+  function chartDefaults() {
+    if (!window.Chart) return;
+    window.Chart.defaults.color = "#c5d0da";
+    window.Chart.defaults.borderColor = "#2c3440";
+    window.Chart.defaults.font.family = '"Avenir Next", "PingFang TC", "Noto Sans TC", sans-serif';
+  }
+
+  function addChart(canvasId, panel, config) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas || !window.Chart) return;
+    const chart = new window.Chart(canvas, config);
+    chart.$panel = panel;
+    chartInstances.push(chart);
+  }
+
+  function doughnut(canvasId, panel, labels, values, ids, colors) {
+    addChart(canvasId, panel, {
+      type: "doughnut",
+      data: {
+        labels: labels,
+        datasets: [{
+          data: values,
+          backgroundColor: colors,
+          borderColor: "#12161c",
+          borderWidth: 2,
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { position: "bottom" } },
+        onClick: function (event, elements) {
+          if (!elements.length) return;
+          choose(ids[elements[0].index]);
+        },
+      },
+    });
+  }
+
+  function horizontalBars(canvasId, panel, labels, values, ids, colors) {
+    addChart(canvasId, panel, {
+      type: "bar",
+      data: {
+        labels: labels,
+        datasets: [{
+          label: "篇數或列數",
+          data: values,
+          backgroundColor: colors,
+          borderWidth: 0,
+        }],
+      },
+      options: {
+        indexAxis: "y",
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { beginAtZero: true, ticks: { precision: 0 }, title: { display: true, text: "數量" } },
+          y: { ticks: { autoSkip: false } },
+        },
+        onClick: function (event, elements) {
+          if (!elements.length) return;
+          choose(ids[elements[0].index]);
+        },
+      },
+    });
+  }
+
+  function showView(name) {
+    if (!VIEW_TITLES[name]) return;
+    activeView = name;
+    document.querySelectorAll("[data-panel]").forEach(function (panel) {
+      panel.hidden = panel.getAttribute("data-panel") !== name;
+    });
+    document.querySelectorAll("#sideNav button").forEach(function (button) {
+      button.classList.toggle("is-active", button.getAttribute("data-view") === name);
+    });
+    const title = document.getElementById("viewTitle");
+    if (title) title.textContent = VIEW_TITLES[name];
+    window.requestAnimationFrame(function () {
+      chartInstances.forEach(function (chart) {
+        if (chart.$panel === name) chart.resize();
+      });
+    });
   }
 
   function renderProgress() {
@@ -252,25 +344,39 @@
     remember("s2-all", "第二階段清單", model.stage2, "stage2_items.csv。A／B／C 與第一階段的有／沒有分開。");
     remember("s2-done", "第二階段已有 A／B／C", stage2Reviewed, "只計算第二階段答案裡的 A、B、C。");
     remember("s2-todo", "第二階段尚未審查", stage2Pending, "沒有 A／B／C 答案。不是 Clean，也不是第一階段的「沒有」。");
-    document.getElementById("progressStats").innerHTML = [
-      statButton("s1-all", model.stage1.length, "第一階段清單（篇）"),
-      statButton("s1-done", model.complete.length, "第一階段已完成（篇）"),
-      statButton("s1-todo", incomplete.length, "第一階段未完成（篇）"),
-      statButton("s2-all", model.stage2.length, "第二階段清單（篇）"),
-      statButton("s2-done", stage2Reviewed.length, "第二階段已審查（篇）"),
-      statButton("s2-todo", stage2Pending.length, "第二階段尚未審查（篇）"),
-    ].join("");
+    const stage1Labels = ["已完成", "未完成"];
+    const stage1Values = [model.complete.length, incomplete.length];
+    const stage1Ids = ["s1-done", "s1-todo"];
+    const stage1Colors = ["#5eead4", "#64748b"];
+    const stage2Labels = ["已審查", "尚未審查"];
+    const stage2Values = [stage2Reviewed.length, stage2Pending.length];
+    const stage2Ids = ["s2-done", "s2-todo"];
+    const stage2Colors = ["#a3e635", "#94a3b8"];
+    doughnut("ovStage1", "overview", stage1Labels, stage1Values, stage1Ids, stage1Colors);
+    doughnut("ovStage2", "overview", stage2Labels, stage2Values, stage2Ids, stage2Colors);
+    doughnut("prStage1", "progress", stage1Labels, stage1Values, stage1Ids, stage1Colors);
+    doughnut("prStage2", "progress", stage2Labels, stage2Values, stage2Ids, stage2Colors);
+    document.getElementById("overviewNote").textContent =
+      "第一階段清單 " + model.stage1.length + " 篇，已完成 " + model.complete.length + "、未完成 " + incomplete.length +
+      "。第二階段清單 " + model.stage2.length + " 篇，已審查 " + stage2Reviewed.length + "、尚未審查 " + stage2Pending.length + "。";
   }
 
   function renderJudgments() {
     const content = countBy(model.complete, function (row) { return contentLabel(row.contentRelevant); });
     const urls = countBy(model.complete, function (row) { return urlLabel(row.urlRelevant); });
     const statuses = countBy(model.complete, function (row) { return row.status || "（空白）"; });
-    document.getElementById("judgmentCharts").innerHTML = [
-      "<div><h3>內容是否含詐騙相關資訊</h3>" + barList(content, "content:", "已完成審查的篇數") + "</div>",
-      "<div><h3>文章中的 URL</h3>" + barList(urls, "url:", "已完成審查的篇數") + "</div>",
-      "<div><h3>已儲存的 status</h3><p class=\"caption\">temp 是仍待追查；non_match 是內容與 URL 都無關且沒有 keyword。兩者都不是 Spam／Clean。</p>" + barList(statuses, "status:", "已完成審查的篇數") + "</div>",
-    ].join("");
+    content.forEach(function (pair) {
+      remember("content:" + pair[0], "內容" + pair[0], pair[1], "已完成審查的篇數");
+    });
+    urls.forEach(function (pair) {
+      remember("url:" + pair[0], "URL " + pair[0], pair[1], "已完成審查的篇數");
+    });
+    statuses.forEach(function (pair) {
+      remember("status:" + pair[0], pair[0], pair[1], "已完成審查的篇數。temp 與 non_match 都不是 Spam／Clean。");
+    });
+    doughnut("pieContent", "judgments", content.map(function (pair) { return pair[0]; }), content.map(function (pair) { return pair[1].length; }), content.map(function (pair) { return "content:" + pair[0]; }), ["#34d399", "#fb7185", "#94a3b8"]);
+    doughnut("pieUrl", "judgments", urls.map(function (pair) { return pair[0]; }), urls.map(function (pair) { return pair[1].length; }), urls.map(function (pair) { return "url:" + pair[0]; }), ["#a78bfa", "#fbbf24", "#60a5fa"]);
+    doughnut("pieStatus", "judgments", statuses.map(function (pair) { return pair[0]; }), statuses.map(function (pair) { return pair[1].length; }), statuses.map(function (pair) { return "status:" + pair[0]; }), ["#38bdf8", "#fb923c", "#e879f9"]);
   }
 
   function renderKeywords() {
@@ -284,7 +390,17 @@
       const selected = selectedId() === id ? " is-selected" : "";
       return '<button type="button" class="cloud-word' + selected + '" data-select="' + id + '" style="font-size:' + size + 'px">' + pair[0] + '</button>';
     }).join("");
-    document.getElementById("keywordBars").innerHTML = barList(top20, "kw:", "已完成審查中寫到這個詞的篇數。同一篇只算一次。");
+    top20.forEach(function (pair) {
+      remember("kw:" + pair[0], "Keyword：" + pair[0], pair[1], "已完成審查中寫到這個詞的篇數。同一篇只算一次。");
+    });
+    horizontalBars(
+      "keywordBar",
+      "keywords",
+      top20.map(function (pair) { return pair[0]; }),
+      top20.map(function (pair) { return pair[1].length; }),
+      top20.map(function (pair) { return "kw:" + pair[0]; }),
+      top20.map(function (pair, index) { return PALETTE[index % PALETTE.length]; })
+    );
   }
 
   function renderStage2() {
@@ -293,7 +409,7 @@
     const pending = model.stage2.length - grades.A - grades.B - grades.C;
     document.getElementById("stage2ReviewLine").textContent =
       "A／B／C 尚未審查 " + pending + " 篇。已填 A " + grades.A + "、B " + grades.B + "、C " + grades.C + "。沒有答案時不會自動填寫。";
-    document.getElementById("priorityChart").innerHTML = PRIORITY.map(function (keyword) {
+    const series = PRIORITY.map(function (keyword) {
       const rows = model.stage2.filter(function (row) { return row.keywords.indexOf(keyword) >= 0; });
       const fresh = rows.filter(function (row) { return row.stage1Flag === "新文章"; });
       const old = rows.filter(function (row) { return row.stage1Flag === "第一階段已存在"; });
@@ -301,13 +417,31 @@
       remember("p8:" + keyword + ":all", keyword + " 全部", rows, "第二階段這個 keyword 的文章。");
       remember("p8:" + keyword + ":new", keyword + " 新文章", fresh, "stage1_flag 為新文章。");
       remember("p8:" + keyword + ":old", keyword + " 第一階段已存在", old, "網址已在第一階段 CSV。仍留在第二階段清單。");
-      const newFlex = Math.max(fresh.length, fresh.length || old.length ? 0 : 1);
-      const oldButton = old.length
-        ? '<button type="button" class="seg old' + (selectedId() === "p8:" + keyword + ":old" ? " is-selected" : "") + '" data-select="p8:' + keyword + ':old" style="flex:' + old.length + '">' + old.length + " 已存在</button>"
-        : "";
-      const newButton = '<button type="button" class="seg new' + (selectedId() === "p8:" + keyword + ":new" ? " is-selected" : "") + '" data-select="p8:' + keyword + ':new" style="flex:' + Math.max(fresh.length, 1) + '"' + (fresh.length ? "" : " disabled") + ">" + fresh.length + " 新</button>";
-      return '<div class="priority-row"><div class="priority-head"><button type="button" class="bar' + (selectedId() === "p8:" + keyword + ":all" ? " is-selected" : "") + '" data-select="p8:' + keyword + ':all"><b>' + keyword + '</b></button><span>' + rows.length + " 篇" + (other.length ? "，其他標記 " + other.length : "") + "</span></div><div class=\"stack\">" + newButton + oldButton + "</div></div>";
-    }).join("");
+      return { keyword: keyword, rows: rows, fresh: fresh, old: old, other: other };
+    });
+    addChart("stage2Bar", "stage2", {
+      type: "bar",
+      data: {
+        labels: series.map(function (item) { return item.keyword; }),
+        datasets: [
+          { label: "新文章", data: series.map(function (item) { return item.fresh.length; }), backgroundColor: "#5eead4" },
+          { label: "第一階段已存在", data: series.map(function (item) { return item.old.length; }), backgroundColor: "#fbbf24" },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: { stacked: true },
+          y: { stacked: true, beginAtZero: true, ticks: { precision: 0 }, title: { display: true, text: "文章數（篇）" } },
+        },
+        onClick: function (event, elements) {
+          if (!elements.length) return;
+          const item = series[elements[0].index];
+          choose(elements[0].datasetIndex === 1 ? "p8:" + item.keyword + ":old" : "p8:" + item.keyword + ":new");
+        },
+      },
+    });
   }
 
   function renderNpa() {
@@ -317,8 +451,7 @@
       return;
     }
     caption.textContent = "來源 " + npa.source_file + " 的「" + npa.source_field + "」，單位是 " + npa.unit + "。快照日期 " + npa.snapshot_date + "，共 " + npa.row_total + " 列、" + npa.unique_host_total + " 個不重複網域；" + npa.hosts_with_multiple_types + " 個網域有一種以上性質，所以各類列數不能換成網域數後相加。線上偵測用的 " + npa.runtime_blacklist_file + " 沒有網站性質欄。第一階段 " + npa.stage1_articles_checked + " 篇與第二階段 " + npa.stage2_articles_checked + " 篇的正文網域，對這份名單和 165 黑名單的精確網域命中都是 " + npa.stage1_articles_exact_host_in_npa + "／" + npa.stage2_articles_exact_host_in_npa + " 與 " + npa.stage1_articles_exact_host_in_165 + "／" + npa.stage2_articles_exact_host_in_165 + "。新聞網域不會出現在這張圖。";
-    const max = npa.counts[0] ? npa.counts[0].rows : 1;
-    document.getElementById("npaChart").innerHTML = npa.counts.map(function (item) {
+    npa.counts.forEach(function (item) {
       const id = "npa:" + item.type;
       model.selections[id] = {
         id: id,
@@ -326,10 +459,15 @@
         rows: [],
         note: item.type + " 有 " + item.rows + " 列。這是官方 165 名單的列數，不是 PTT 文章，也不是文章裡出現的詐騙網域。",
       };
-      const width = Math.max(2, Math.round((item.rows / max) * 100));
-      const selected = selectedId() === id ? " is-selected" : "";
-      return '<button type="button" class="bar' + selected + '" data-select="' + id + '"><span>' + item.type + '</span><span class="track"><span class="fill warn" style="width:' + width + '%"></span></span><b>' + item.rows + "</b></button>";
-    }).join("");
+    });
+    horizontalBars(
+      "npaBar",
+      "npa",
+      npa.counts.map(function (item) { return item.type; }),
+      npa.counts.map(function (item) { return item.rows; }),
+      npa.counts.map(function (item) { return "npa:" + item.type; }),
+      npa.counts.map(function (item, index) { return PALETTE[index % PALETTE.length]; })
+    );
   }
 
   function duplicateGroups(rows) {
@@ -367,8 +505,12 @@
       statButton("multi-search", multiSearch.length, "第二階段含 2 個以上搜尋 Keyword"),
       '<div class="stat"><strong>' + union.size + '</strong><span>去重後聯集（篇）</span></div>',
     ].join("");
-    document.getElementById("boardStage1").innerHTML = barList(countBy(model.stage1, function (row) { return row.board; }), "b1:", "第一階段清單篇數");
-    document.getElementById("boardStage2").innerHTML = barList(countBy(model.stage2, function (row) { return row.board; }), "b2:", "第二階段清單篇數");
+    const boards1 = countBy(model.stage1, function (row) { return row.board; });
+    const boards2 = countBy(model.stage2, function (row) { return row.board; });
+    boards1.forEach(function (pair) { remember("b1:" + pair[0], pair[0], pair[1], "第一階段清單篇數"); });
+    boards2.forEach(function (pair) { remember("b2:" + pair[0], pair[0], pair[1], "第二階段清單篇數"); });
+    horizontalBars("board1", "quality", boards1.map(function (pair) { return pair[0]; }), boards1.map(function (pair) { return pair[1].length; }), boards1.map(function (pair) { return "b1:" + pair[0]; }), ["#5eead4", "#60a5fa", "#fbbf24", "#fb7185"]);
+    horizontalBars("board2", "quality", boards2.map(function (pair) { return pair[0]; }), boards2.map(function (pair) { return pair[1].length; }), boards2.map(function (pair) { return "b2:" + pair[0]; }), ["#a78bfa", "#34d399", "#fb923c", "#38bdf8"]);
   }
 
   function articleCard(row) {
@@ -429,6 +571,11 @@
   }
 
   function render() {
+    destroyCharts();
+    chartDefaults();
+    dashboard.hidden = false;
+    loading.hidden = true;
+    document.querySelectorAll("[data-panel]").forEach(function (panel) { panel.hidden = false; });
     model.selections = {};
     renderProgress();
     renderJudgments();
@@ -438,8 +585,7 @@
     renderQuality();
     if (selection && model.selections[selection.id]) selection = model.selections[selection.id];
     renderExplorer();
-    dashboard.hidden = false;
-    loading.hidden = true;
+    showView(activeView);
   }
 
   function choose(id) {
@@ -471,6 +617,27 @@
     model = buildModel(items, stage2Rows, answers1, answers2);
     render();
   }
+
+  document.getElementById("sideNav").addEventListener("click", function (event) {
+    const button = event.target.closest("[data-view]");
+    if (!button) return;
+    showView(button.getAttribute("data-view"));
+    document.body.classList.remove("nav-open");
+    document.getElementById("navScrim").hidden = true;
+    document.getElementById("menuBtn").setAttribute("aria-expanded", "false");
+  });
+
+  document.getElementById("menuBtn").addEventListener("click", function () {
+    const open = document.body.classList.toggle("nav-open");
+    document.getElementById("navScrim").hidden = !open;
+    document.getElementById("menuBtn").setAttribute("aria-expanded", open ? "true" : "false");
+  });
+
+  document.getElementById("navScrim").addEventListener("click", function () {
+    document.body.classList.remove("nav-open");
+    document.getElementById("navScrim").hidden = true;
+    document.getElementById("menuBtn").setAttribute("aria-expanded", "false");
+  });
 
   document.getElementById("dashboard").addEventListener("click", function (event) {
     const button = event.target.closest("[data-select]");
