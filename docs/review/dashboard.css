@@ -89,11 +89,11 @@ a { color: var(--accent); }
 
 .content-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 320px;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 320px);
   gap: 1rem;
   align-items: start;
 }
-section { min-width: 0; }
+main, section, .chart-card, .explorer { min-width: 0; }
 .chart-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 0.8rem; }
 .chart-grid.three { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
 .chart-card, .explorer, .stat {
@@ -102,11 +102,12 @@ section { min-width: 0; }
   border-radius: 14px;
 }
 .chart-card { padding: 0.9rem; }
-.chart-box { position: relative; height: 260px; }
+.chart-box { position: relative; height: 260px; overflow: hidden; }
+.chart-box canvas { max-width: 100%; }
 .chart-box.tall { height: 520px; }
 .chart-box.xtall { height: 640px; }
 
-.stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0.7rem; margin-bottom: 1rem; }
+.stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(160px, 100%), 1fr)); gap: 0.7rem; margin: 0.8rem 0; }
 .stat {
   text-align: left;
   color: var(--ink);
@@ -118,7 +119,21 @@ section { min-width: 0; }
 .stat span { color: var(--muted); font-size: 0.8rem; }
 .stat.is-selected, .cloud-word.is-selected { outline: 1px solid var(--accent); }
 
-.cloud { display: flex; flex-wrap: wrap; gap: 0.4rem 0.75rem; align-items: baseline; margin-bottom: 0.8rem; }
+.domain-table { width: 100%; border-collapse: collapse; margin-top: 0.9rem; }
+.domain-table th, .domain-table td { text-align: left; padding: 0.45rem 0.2rem; border-bottom: 1px solid var(--line); font-size: 0.88rem; }
+.domain-table th { color: var(--muted); font-weight: 650; }
+.domain-table td:last-child, .domain-table th:last-child { text-align: right; width: 6rem; }
+.domain-table button {
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+  padding: 0;
+}
+.domain-table button.is-selected { color: var(--accent); }
+
+.cloud { display: flex; flex-wrap: wrap; gap: 0.4rem 0.75rem; align-items: baseline; margin: 0.4rem 0 1rem; }
 .cloud-word {
   border: 0;
   background: transparent;
@@ -161,6 +176,7 @@ section { min-width: 0; }
 .tag.old { background: var(--old-soft); color: var(--old); }
 pre {
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
   background: var(--card-2);
   border-radius: 8px;
   padding: 0.5rem;

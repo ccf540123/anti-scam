@@ -10,16 +10,11 @@
   <div id="appView">
     <div class="shell">
       <aside id="sidebar" class="sidebar">
-        <p class="eyebrow">Analysis</p>
-        <strong class="brand">詐騙資料分析</strong>
+        <strong class="brand">已審查貼文分析</strong>
         <nav id="sideNav" aria-label="分析區塊">
-          <button type="button" data-view="overview">總覽</button>
-          <button type="button" data-view="progress">審查進度</button>
-          <button type="button" data-view="judgments">第一階段審查</button>
-          <button type="button" data-view="keywords">人工 Keyword</button>
-          <button type="button" data-view="stage2">第二階段 Keyword</button>
-          <button type="button" data-view="npa">165 官方名單</button>
-          <button type="button" data-view="quality">資料品質</button>
+          <button type="button" data-view="counts">數量</button>
+          <button type="button" data-view="keywords">關鍵字</button>
+          <button type="button" data-view="links">連結</button>
         </nav>
       </aside>
       <div id="navScrim" class="scrim" hidden></div>
@@ -28,8 +23,7 @@
         <header class="top">
           <button id="menuBtn" type="button" class="btn menu-btn" aria-expanded="false">選單</button>
           <div>
-            <p class="eyebrow">Scam Analysis Dashboard</p>
-            <h1 id="viewTitle">總覽</h1>
+            <h1 id="viewTitle">數量</h1>
           </div>
           <div class="top-actions">
             <a class="btn" href="index.html">回到審查</a>
@@ -43,95 +37,34 @@
         <div id="dashboard" hidden>
           <div class="content-grid">
             <main>
-              <section data-panel="overview">
-                <h2>總覽</h2>
-                <p class="caption">第一階段與第二階段分開計算。未完成與尚未審查都不是 Clean，也沒有 Spam／Clean 分類。</p>
-                <div class="chart-grid">
-                  <div class="chart-card">
-                    <h3>第一階段完成比例</h3>
-                    <div class="chart-box"><canvas id="ovStage1"></canvas></div>
-                  </div>
-                  <div class="chart-card">
-                    <h3>第二階段審查比例</h3>
-                    <div class="chart-box"><canvas id="ovStage2"></canvas></div>
-                  </div>
+              <section data-panel="counts">
+                <h2>分析了多少篇</h2>
+                <p class="caption">圓餅圖是第一階段清單。內容有、內容沒有來自已完成審查的填答，未審查是還沒審完的文章。這三類都不是 Spam 或 Clean。</p>
+                <div class="chart-card">
+                  <div class="chart-box"><canvas id="countChart"></canvas></div>
                 </div>
-                <p id="overviewNote" class="caption"></p>
-              </section>
-
-              <section data-panel="progress" hidden>
-                <h2>審查進度</h2>
-                <p class="caption">第一階段清單是 items.csv。完成的定義與審查頁相同：內容與 URL 都已填，且任一項選「有」時至少有一個 keyword。未完成不是 Clean。第二階段清單是 stage2_items.csv；A／B／C 另計，沒有答案就顯示尚未審查。</p>
-                <div class="chart-grid">
-                  <div class="chart-card">
-                    <h3>第一階段（篇）</h3>
-                    <div class="chart-box"><canvas id="prStage1"></canvas></div>
-                    <button type="button" class="text-link" data-select="s1-all">查看第一階段全部清單</button>
-                  </div>
-                  <div class="chart-card">
-                    <h3>第二階段（篇）</h3>
-                    <div class="chart-box"><canvas id="prStage2"></canvas></div>
-                    <button type="button" class="text-link" data-select="s2-all">查看第二階段全部清單</button>
-                  </div>
-                </div>
-              </section>
-
-              <section data-panel="judgments" hidden>
-                <h2>第一階段審查</h2>
-                <p class="caption">只統計已完成的文章。內容「有／沒有」來自 content_relevant，URL 來自 url_relevant，status 來自已儲存的 temp／non_match。這不是 Spam／Clean，也不包含未審查文章。temp 是仍待追查；non_match 是內容與 URL 都無關且沒有 keyword。</p>
-                <div class="chart-grid three">
-                  <div class="chart-card">
-                    <h3>內容是否含詐騙相關資訊</h3>
-                    <div class="chart-box"><canvas id="pieContent"></canvas></div>
-                  </div>
-                  <div class="chart-card">
-                    <h3>文章中的 URL</h3>
-                    <div class="chart-box"><canvas id="pieUrl"></canvas></div>
-                  </div>
-                  <div class="chart-card">
-                    <h3>已儲存的 status</h3>
-                    <div class="chart-box"><canvas id="pieStatus"></canvas></div>
-                  </div>
-                </div>
+                <div class="stat-grid" id="countStats"></div>
+                <p id="countNote" class="caption"></p>
               </section>
 
               <section data-panel="keywords" hidden>
-                <h2>人工 Keyword</h2>
-                <p class="caption">只計算已完成審查、由人寫進 Supabase keywords 的詞。同一篇文章裡的重複詞只算一次。這不是全文自動斷詞，也不能代表未審查文章。</p>
-                <h3>詞雲（次數最高的 40 個）</h3>
+                <h2>內容有的文章裡，審查者寫下的關鍵字</h2>
+                <p class="caption">只算「內容有」的文章。詞是人寫進審查結果的 keyword，同一篇重複的詞只算一次，不是從全文自動抓出來的。</p>
                 <div id="wordCloud" class="cloud"></div>
-                <h3>TOP 20（篇）</h3>
+                <h3>前 20 名（篇）</h3>
                 <div class="chart-box tall"><canvas id="keywordBar"></canvas></div>
               </section>
 
-              <section data-panel="stage2" hidden>
-                <h2>第二階段 Keyword</h2>
-                <p class="caption">文章數來自 stage2_items.csv 的 search_keyword，以「、」拆開後精確比對。新文章與第一階段已存在來自 stage1_flag。A／B／C 只看第二階段答案。點柱狀圖的色塊可列出該類文章。</p>
-                <p id="stage2ReviewLine" class="review-line"></p>
-                <div class="chart-box tall"><canvas id="stage2Bar"></canvas></div>
-              </section>
-
-              <section data-panel="npa" hidden>
-                <h2>165 官方名單</h2>
-                <p class="caption" id="npaCaption"></p>
-                <div class="chart-box xtall"><canvas id="npaBar"></canvas></div>
-              </section>
-
-              <section data-panel="quality" hidden>
-                <h2>資料品質</h2>
-                <p class="caption">重複與跨階段重疊都以文章 URL 正規化後比較：去掉網址尾端斜線、忽略 fragment，主機名稱轉成小寫。Keyword 重疊是指同一篇文章有兩個以上的詞，不是把各詞的篇數相加。</p>
-                <div class="stat-grid" id="qualityStats"></div>
-                <h3>看板分布（清單篇數，不是文章品質）</h3>
-                <div class="chart-grid">
-                  <div class="chart-card">
-                    <h3>第一階段清單</h3>
-                    <div class="chart-box tall"><canvas id="board1"></canvas></div>
-                  </div>
-                  <div class="chart-card">
-                    <h3>第二階段清單</h3>
-                    <div class="chart-box"><canvas id="board2"></canvas></div>
-                  </div>
-                </div>
+              <section data-panel="links" hidden>
+                <h2>內容有的文章裡出現的網域</h2>
+                <p id="linkCaption" class="caption"></p>
+                <div class="chart-box tall"><canvas id="linkBar"></canvas></div>
+                <table class="domain-table">
+                  <thead>
+                    <tr><th>網域</th><th>篇文章數</th></tr>
+                  </thead>
+                  <tbody id="linkTable"></tbody>
+                </table>
               </section>
             </main>
 
