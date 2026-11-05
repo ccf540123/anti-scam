@@ -1,13 +1,8 @@
 (function () {
   const cfg = window.REVIEW_CONFIG || {};
-  const SESSION_KEY = "ptt_review_auth_v1";
   const PRIORITY = ["網拍詐騙", "約定轉帳", "簡訊詐騙", "ATM詐騙", "三方詐騙", "釣魚網站", "假冒警察", "解除分期付款"];
   const PAGE_SIZE = 12;
 
-  const loginView = document.getElementById("loginView");
-  const appView = document.getElementById("appView");
-  const loginForm = document.getElementById("loginForm");
-  const loginError = document.getElementById("loginError");
   const loading = document.getElementById("loading");
   const loadError = document.getElementById("loadError");
   const dashboard = document.getElementById("dashboard");
@@ -95,17 +90,6 @@
     if (value === "no") return "沒有";
     if (value === "none") return "無 URL";
     return "未填";
-  }
-
-  function showLogin(message) {
-    appView.hidden = true;
-    loginView.hidden = false;
-    if (message) {
-      loginError.hidden = false;
-      loginError.textContent = message;
-    } else {
-      loginError.hidden = true;
-    }
   }
 
   function getClient() {
@@ -652,33 +636,9 @@
     });
   });
 
-  loginForm.addEventListener("submit", function (event) {
-    event.preventDefault();
-    const expected = String(cfg.REVIEW_PASSWORD || "");
-    if (!expected || document.getElementById("passwordInput").value !== expected) {
-      showLogin("密碼錯誤");
-      return;
-    }
-    sessionStorage.setItem(SESSION_KEY, "1");
-    document.getElementById("passwordInput").value = "";
-    loginView.hidden = true;
-    appView.hidden = false;
-    load().catch(function (err) {
-      loadError.hidden = false;
-      loadError.textContent = err.message || String(err);
-      loading.hidden = true;
-    });
+  load().catch(function (err) {
+    loadError.hidden = false;
+    loadError.textContent = err.message || String(err);
+    loading.hidden = true;
   });
-
-  if (sessionStorage.getItem(SESSION_KEY) === "1") {
-    loginView.hidden = true;
-    appView.hidden = false;
-    load().catch(function (err) {
-      loadError.hidden = false;
-      loadError.textContent = err.message || String(err);
-      loading.hidden = true;
-    });
-  } else {
-    showLogin();
-  }
 })();
