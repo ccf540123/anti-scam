@@ -14,7 +14,7 @@
         <nav id="sideNav" aria-label="分析區塊">
           <button type="button" data-view="counts">數量</button>
           <button type="button" data-view="keywords">關鍵字</button>
-          <button type="button" data-view="links">連結</button>
+          <button type="button" data-view="links">文中的網站</button>
         </nav>
       </aside>
       <div id="navScrim" class="scrim" hidden></div>
@@ -39,7 +39,7 @@
             <main>
               <section data-panel="counts">
                 <h2>分析了多少篇</h2>
-                <p class="caption">圓餅圖是第一階段清單。內容有、內容沒有來自已完成審查的填答，未審查是還沒審完的文章。這三類都不是 Spam 或 Clean。</p>
+                <p class="caption">圓餅圖是第一階段清單。前兩類是審查者對「文章內容是否包含詐騙相關資訊」的回答。尚未審查是還沒填完的文章。這三類都不是 Spam 或 Clean。</p>
                 <div class="chart-card">
                   <div class="chart-box"><canvas id="countChart"></canvas></div>
                 </div>
@@ -48,15 +48,14 @@
               </section>
 
               <section data-panel="keywords" hidden>
-                <h2>內容有的文章裡，審查者寫下的關鍵字</h2>
-                <p class="caption">只算「內容有」的文章。詞是人寫進審查結果的 keyword，同一篇重複的詞只算一次，不是從全文自動抓出來的。</p>
+                <h2>審查者寫下的關鍵字</h2>
+                <p class="caption">只算勾選「有詐騙相關內容」的文章。詞是人寫進審查結果的，同一篇重複的詞只算一次，不是從全文自動抓出來的。</p>
                 <div id="wordCloud" class="cloud"></div>
                 <h3>前 20 名（篇）</h3>
                 <div class="chart-box tall"><canvas id="keywordBar"></canvas></div>
               </section>
 
               <section data-panel="links" hidden>
-                <h2>內容有的文章裡出現的網域</h2>
                 <p id="linkCaption" class="caption"></p>
                 <div class="chart-box tall"><canvas id="linkBar"></canvas></div>
                 <table class="domain-table">

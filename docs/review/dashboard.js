@@ -17,7 +17,7 @@
   const VIEW_TITLES = {
     counts: "數量",
     keywords: "關鍵字",
-    links: "連結",
+    links: "文中的網站",
   };
   function canon(url) {
     const raw = String(url || "").trim();
@@ -92,15 +92,15 @@
   }
 
   function contentLabel(value) {
-    if (value === "yes") return "有";
-    if (value === "no") return "沒有";
+    if (value === "yes") return "有詐騙相關內容";
+    if (value === "no") return "沒有詐騙相關內容";
     return "未填";
   }
 
   function urlLabel(value) {
-    if (value === "yes") return "有";
-    if (value === "no") return "沒有";
-    if (value === "none") return "無 URL";
+    if (value === "yes") return "有詐騙相關資訊";
+    if (value === "no") return "沒有詐騙相關資訊";
+    if (value === "none") return "沒有網址";
     return "未填";
   }
 
@@ -337,21 +337,21 @@
   function renderCounts() {
     const incomplete = model.stage1.filter(function (row) { return !row.complete; });
     const pending2 = model.stage2.filter(function (row) { return !row.grade; }).length;
-    remember("count:yes", "內容有", model.contentYes, "已完成審查，而且內容被填成「有」。這不是 Spam。");
-    remember("count:no", "內容沒有", model.contentNo, "已完成審查，而且內容被填成「沒有」。這不是 Clean。");
-    remember("count:todo", "未審查", incomplete, "第一階段還沒審完。這不是 Clean。");
+    remember("count:yes", "有詐騙相關內容", model.contentYes, "已完成審查，而且「文章內容是否包含詐騙相關資訊」選了有。這不是 Spam。");
+    remember("count:no", "沒有詐騙相關內容", model.contentNo, "已完成審查，而且「文章內容是否包含詐騙相關資訊」選了沒有。這不是 Clean。");
+    remember("count:todo", "尚未審查", incomplete, "第一階段還沒審完。這不是 Clean。");
     doughnut(
       "countChart",
       "counts",
-      ["內容有", "內容沒有", "未審查"],
+      ["有詐騙相關內容", "沒有詐騙相關內容", "尚未審查"],
       [model.contentYes.length, model.contentNo.length, incomplete.length],
       ["count:yes", "count:no", "count:todo"],
       ["#5eead4", "#fbbf24", "#64748b"]
     );
     document.getElementById("countStats").innerHTML = [
-      statButton("count:yes", model.contentYes.length, "內容有"),
-      statButton("count:no", model.contentNo.length, "內容沒有"),
-      statButton("count:todo", incomplete.length, "未審查"),
+      statButton("count:yes", model.contentYes.length, "有詐騙相關內容"),
+      statButton("count:no", model.contentNo.length, "沒有詐騙相關內容"),
+      statButton("count:todo", incomplete.length, "尚未審查"),
     ].join("");
     document.getElementById("countNote").textContent =
       "第一階段清單 " + model.stage1.length + " 篇，已完成審查 " + model.complete.length + " 篇。第二階段 " + model.stage2.length + " 篇裡有 " + pending2 + " 篇尚未審查，沒有放進這張圖。";
@@ -361,7 +361,7 @@
     const top40 = model.keywordRank.slice(0, 40);
     const top20 = model.keywordRank.slice(0, 20);
     const max = top40.length ? top40[0][1].length : 1;
-    const note = "「內容有」的文章裡，審查者寫到這個詞的篇數。同一篇只算一次。";
+    const note = "有詐騙相關內容的文章裡，審查者寫到這個詞的篇數。同一篇只算一次。";
     document.getElementById("wordCloud").innerHTML = top40.map(function (pair) {
       const id = "kw:" + pair[0];
       remember(id, pair[0], pair[1], note);
@@ -384,9 +384,9 @@
     const withLink = model.contentYes.filter(function (row) { return row.hosts.length > 0; }).length;
     const hit = npa ? npa.stage1_articles_exact_host_in_165 : 0;
     document.getElementById("linkCaption").textContent =
-      "從「內容有」的 " + model.contentYes.length + " 篇內文抓取連結，去掉 PTT 自己的網域。同一篇裡的同一個網域只算一次。其中 " + withLink + " 篇有外部網域。這些是貼文裡寫到的網站，不是已確認的詐騙網域；和 165 官方名單做網域完全比對，命中 " + hit + " 篇。";
+      "下面是「有詐騙相關內容」的 " + model.contentYes.length + " 篇文章裡寫到的網站。已去掉 PTT 自己的網域，同一篇同一個網站只算一次。其中 " + withLink + " 篇有外部網站。這些網站還沒被核對成詐騙網站；和 165 官方名單完全比對，命中 " + hit + " 篇。";
     top.forEach(function (pair) {
-      remember("host:" + pair[0], pair[0], pair[1], "「內容有」的文章裡出現這個網域的篇數。同一篇只算一次。");
+      remember("host:" + pair[0], pair[0], pair[1], "有詐騙相關內容的文章裡，出現這個網站的篇數。同一篇只算一次。");
     });
     horizontalBars(
       "linkBar",
@@ -412,10 +412,10 @@
       if (row.stage1Flag) bits.push('<span class="tag old">' + escapeHtml(row.stage1Flag) + "</span>");
       bits.push("</p><p>搜尋 keyword：" + escapeHtml(row.keywords.join("、") || "—") + "</p>");
     } else if (!row.complete) {
-      bits.push('<span class="tag warn">未審查</span></p><p>內容與 URL 判斷：未審查。這不是「沒有」或 Clean。</p>');
+      bits.push('<span class="tag warn">尚未審查</span></p><p>這篇還沒填完，所以沒有內容判斷。這不是「沒有詐騙相關內容」，也不是 Clean。</p>');
     } else {
-      bits.push('<span class="tag">內容' + contentLabel(row.contentRelevant) + "</span>");
-      bits.push('<span class="tag">URL ' + urlLabel(row.urlRelevant) + "</span>");
+      bits.push('<span class="tag">內容：' + contentLabel(row.contentRelevant) + "</span>");
+      bits.push('<span class="tag">網址：' + urlLabel(row.urlRelevant) + "</span>");
       bits.push('<span class="tag">' + escapeHtml(row.status || "—") + "</span></p>");
       bits.push("<p>人工 keyword：" + escapeHtml(row.keywords.join("、") || "—") + "</p>");
     }
