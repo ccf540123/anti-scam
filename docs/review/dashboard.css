@@ -119,6 +119,37 @@ main, section, .chart-card, .explorer { min-width: 0; }
 .stat span { color: var(--muted); font-size: 0.8rem; }
 .stat.is-selected, .cloud-word.is-selected { outline: 1px solid var(--accent); }
 
+.filters { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0.4rem 0 0.8rem; }
+.filters input, .filters select {
+  background: #0e1218;
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0.55rem 0.7rem;
+  font: inherit;
+  min-width: 0;
+}
+.filters input { flex: 1 1 180px; }
+.data-table { width: 100%; border-collapse: collapse; margin: 0.4rem 0 0.9rem; }
+.data-table th, .data-table td {
+  text-align: left;
+  padding: 0.45rem 0.35rem;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.86rem;
+  vertical-align: top;
+}
+.data-table th { color: var(--muted); font-weight: 650; }
+.data-table td:last-child, .data-table a { word-break: break-all; }
+.data-table button {
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  padding: 0;
+}
+
 .domain-table { width: 100%; border-collapse: collapse; margin-top: 0.9rem; }
 .domain-table th, .domain-table td { text-align: left; padding: 0.45rem 0.2rem; border-bottom: 1px solid var(--line); font-size: 0.88rem; }
 .domain-table th { color: var(--muted); font-weight: 650; }

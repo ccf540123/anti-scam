@@ -10,8 +10,15 @@
   <div id="appView">
     <div class="shell">
       <aside id="sidebar" class="sidebar">
-        <strong class="brand">已審查貼文分析</strong>
+        <strong class="brand">詐騙研究分析</strong>
         <nav id="sideNav" aria-label="分析區塊">
+          <button type="button" data-view="overview">資料總覽</button>
+          <button type="button" data-view="overlap">清單交叉</button>
+          <button type="button" data-view="years">年份</button>
+          <button type="button" data-view="sources">來源</button>
+          <button type="button" data-view="review">人工審查</button>
+          <button type="button" data-view="official">官方名單</button>
+          <button type="button" data-view="cases">案例查詢</button>
           <button type="button" data-view="counts">數量</button>
           <button type="button" data-view="keywords">關鍵字</button>
           <button type="button" data-view="links">文中的網站</button>
@@ -23,7 +30,7 @@
         <header class="top">
           <button id="menuBtn" type="button" class="btn menu-btn" aria-expanded="false">選單</button>
           <div>
-            <h1 id="viewTitle">數量</h1>
+            <h1 id="viewTitle">資料總覽</h1>
           </div>
           <div class="top-actions">
             <a class="btn" href="index.html">回到審查</a>
@@ -37,6 +44,110 @@
         <div id="dashboard" hidden>
           <div class="content-grid">
             <main>
+              <section data-panel="overview">
+                <h2>資料總覽</h2>
+                <p class="caption">每列是一份獨立清單。四份筆數不能相加，下面的聯集也不是確認案例數。</p>
+                <table class="data-table">
+                  <thead>
+                    <tr><th>清單</th><th>筆數</th><th>來源</th><th>檔案時間</th></tr>
+                  </thead>
+                  <tbody id="overviewTable"></tbody>
+                </table>
+                <p id="overviewUnion" class="caption"></p>
+              </section>
+
+              <section data-panel="overlap" hidden>
+                <h2>清單交叉</h2>
+                <p class="caption">重疊以文章網址正規化後比較：去掉尾端斜線，主機名稱轉成小寫。只出現在某一份清單的篇數，是扣掉另外三份之後剩下的網址。</p>
+                <table class="data-table">
+                  <thead>
+                    <tr><th>比較</th><th>兩邊都有</th><th>只在左邊</th><th>只在右邊</th></tr>
+                  </thead>
+                  <tbody id="overlapTable"></tbody>
+                </table>
+                <p id="overlapNote" class="caption"></p>
+              </section>
+
+              <section data-panel="years" hidden>
+                <h2>PTT 文章年份</h2>
+                <p class="caption">只算 ptt_scam_cases.csv。年份來自發布時間，缺日期的文章不放進長條圖。</p>
+                <div class="chart-card">
+                  <div class="chart-box tall"><canvas id="yearChart"></canvas></div>
+                </div>
+                <p id="yearMissing" class="caption"></p>
+              </section>
+
+              <section data-panel="sources" hidden>
+                <h2>來源</h2>
+                <p id="sourceCaption" class="caption"></p>
+                <div class="chart-grid">
+                  <div class="chart-card">
+                    <h3>PTT 看板</h3>
+                    <div class="chart-box"><canvas id="boardChart"></canvas></div>
+                  </div>
+                  <div class="chart-card">
+                    <h3>PTT 搜尋關鍵字</h3>
+                    <div class="chart-box"><canvas id="crawlKeywordChart"></canvas></div>
+                  </div>
+                </div>
+                <h3>team keywords 搜尋詞（前 15 名）</h3>
+                <div class="chart-box tall"><canvas id="teamKeywordChart"></canvas></div>
+              </section>
+
+              <section data-panel="review" hidden>
+                <h2>人工審查</h2>
+                <p class="caption">圓餅圖只回答第一階段「文章內容是否包含詐騙相關資訊」。它不是確認詐騙案例。官方名單命中另外列在下方，沒有算進圓餅圖。</p>
+                <div class="chart-card">
+                  <div class="chart-box"><canvas id="reviewChart"></canvas></div>
+                </div>
+                <div class="stat-grid" id="reviewStats"></div>
+                <p id="reviewOfficial" class="caption"></p>
+              </section>
+
+              <section data-panel="official" hidden>
+                <h2>官方名單比對</h2>
+                <p class="caption">三份名單的單位不同。網站列數、黑名單網域和 PTT 文章命中不能加在一起。</p>
+                <table class="data-table">
+                  <thead>
+                    <tr><th>項目</th><th>數字</th><th>意義</th></tr>
+                  </thead>
+                  <tbody id="officialTable"></tbody>
+                </table>
+              </section>
+
+              <section data-panel="cases" hidden>
+                <h2>案例查詢</h2>
+                <p class="caption">一列是一個不重複文章網址。審查狀態來自 Supabase 的人工填答；沒有進入審查清單的文章不會被標成尚未審查。</p>
+                <div class="filters">
+                  <input id="caseQuery" type="search" placeholder="搜尋標題或網址">
+                  <select id="caseDataset">
+                    <option value="all">全部清單</option>
+                    <option value="ptt_crawl">PTT 爬蟲</option>
+                    <option value="stage1">第一階段</option>
+                    <option value="stage2">第二階段</option>
+                    <option value="team_keywords">team keywords</option>
+                  </select>
+                  <select id="caseReview">
+                    <option value="all">全部審查狀態</option>
+                    <option value="stage1_yes">有詐騙相關內容</option>
+                    <option value="stage1_no">沒有詐騙相關內容</option>
+                    <option value="stage1_todo">第一階段尚未審查</option>
+                    <option value="stage2_graded">第二階段已填 A／B／C</option>
+                    <option value="stage2_todo">第二階段尚未審查</option>
+                    <option value="not_in_review">未進入審查清單</option>
+                    <option value="official_exact">文章狀態 exact_match</option>
+                  </select>
+                </div>
+                <p id="caseMeta" class="caption"></p>
+                <table class="data-table">
+                  <thead>
+                    <tr><th>標題</th><th>清單</th><th>日期</th><th>網址</th><th>審查狀態</th></tr>
+                  </thead>
+                  <tbody id="caseTable"></tbody>
+                </table>
+                <div id="casePager" class="pager"></div>
+              </section>
+
               <section data-panel="counts">
                 <h2>分析了多少篇</h2>
                 <p class="caption">圓餅圖是第一階段清單。前兩類是審查者對「文章內容是否包含詐騙相關資訊」的回答。尚未審查是還沒填完的文章。這三類都不是 Spam 或 Clean。</p>

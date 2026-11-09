@@ -9,12 +9,27 @@
 
   let model = null;
   let npa = null;
+  let catalog = null;
   let selection = null;
   let page = 0;
+  let casePage = 0;
   let supabase = null;
   let chartInstances = [];
-  let activeView = "counts";
+  let activeView = "overview";
+  const DATASET_LABELS = {
+    ptt_crawl: "PTT 爬蟲",
+    stage1: "第一階段",
+    stage2: "第二階段",
+    team_keywords: "team keywords",
+  };
   const VIEW_TITLES = {
+    overview: "資料總覽",
+    overlap: "清單交叉",
+    years: "年份",
+    sources: "來源",
+    review: "人工審查",
+    official: "官方名單",
+    cases: "案例查詢",
     counts: "數量",
     keywords: "關鍵字",
     links: "文中的網站",
@@ -407,7 +422,10 @@
     const bits = ['<article class="article"><h3>' + escapeHtml(row.title) + "</h3><p>"];
     bits.push('<span class="tag">' + row.phase + "</span>");
     bits.push('<span class="tag">' + escapeHtml(row.board) + "</span>");
-    if (row.phase === "第二階段") {
+    if (row.catalogStatus) {
+      bits.push('<span class="tag">' + escapeHtml(row.catalogStatus) + "</span></p>");
+      if (row.catalogNote) bits.push("<p>" + escapeHtml(row.catalogNote) + "</p>");
+    } else if (row.phase === "第二階段") {
       bits.push('<span class="tag warn">' + (row.grade ? "A／B／C：" + row.grade : "尚未審查") + "</span>");
       if (row.stage1Flag) bits.push('<span class="tag old">' + escapeHtml(row.stage1Flag) + "</span>");
       bits.push("</p><p>搜尋 keyword：" + escapeHtml(row.keywords.join("、") || "—") + "</p>");
@@ -460,6 +478,189 @@
     if (next) next.addEventListener("click", function () { page += 1; renderExplorer(); });
   }
 
+  function datasetName(id) {
+    return DATASET_LABELS[id] || id;
+  }
+
+  function stageMaps() {
+    const stage1 = {};
+    const stage2 = {};
+    model.stage1.forEach(function (row) { stage1[row.reviewId] = row; });
+    model.stage2.forEach(function (row) { stage2[row.reviewId] = row; });
+    return { stage1: stage1, stage2: stage2 };
+  }
+
+  function articleReview(article, maps) {
+    const parts = [];
+    const first = article.stage1_review_id ? maps.stage1[article.stage1_review_id] : null;
+    const second = article.stage2_review_id ? maps.stage2[article.stage2_review_id] : null;
+    if (first) {
+      if (!first.complete) parts.push({ id: "stage1_todo", text: "第一階段尚未審查" });
+      else if (first.contentRelevant === "yes") parts.push({ id: "stage1_yes", text: "有詐騙相關內容" });
+      else if (first.contentRelevant === "no") parts.push({ id: "stage1_no", text: "沒有詐騙相關內容" });
+      else parts.push({ id: "stage1_other", text: "第一階段已填答" });
+    }
+    if (second) {
+      if (second.grade) parts.push({ id: "stage2_graded", text: "第二階段 " + second.grade });
+      else parts.push({ id: "stage2_todo", text: "第二階段尚未審查" });
+    }
+    if (!first && !second) parts.push({ id: "not_in_review", text: "未進入審查清單" });
+    if (article.official_exact_status) parts.push({ id: "official_exact", text: "exact_match" });
+    return parts;
+  }
+
+  function catalogArticleRow(article, maps) {
+    const parts = articleReview(article, maps);
+    return {
+      phase: "研究清單",
+      title: article.title || "（無標題）",
+      board: (article.boards || []).join("、") || "—",
+      url: article.url,
+      content: "",
+      catalogStatus: parts.map(function (part) { return part.text; }).join("、"),
+      catalogNote: "出現在：" + article.datasets.map(datasetName).join("、") + (article.year ? "。年份 " + article.year : "。沒有可解析的日期"),
+    };
+  }
+
+  function renderCatalog() {
+    if (!catalog) return;
+    const byId = {};
+    catalog.datasets.forEach(function (item) { byId[item.id] = item; });
+    document.getElementById("overviewTable").innerHTML = catalog.datasets.map(function (item) {
+      return "<tr><td>" + escapeHtml(item.label) + "</td><td>" + item.rows + "</td><td>" + escapeHtml(item.source) + "</td><td>" + escapeHtml(item.file_updated_at) + "</td></tr>";
+    }).join("");
+    document.getElementById("overviewUnion").textContent =
+      "四份清單去掉重複網址後有 " + catalog.overlap.union_urls + " 個文章網址。這不是案例總數，也不是把 " +
+      catalog.datasets.map(function (item) { return item.rows; }).join("、") + " 加總。";
+    document.getElementById("overlapTable").innerHTML = catalog.overlap.pairs.map(function (pair) {
+      return "<tr><td>" + escapeHtml(datasetName(pair.a) + " × " + datasetName(pair.b)) + "</td><td>" + pair.both + "</td><td>" + pair.only_a + "</td><td>" + pair.only_b + "</td></tr>";
+    }).join("");
+    const onlyText = Object.keys(catalog.overlap.only).map(function (key) {
+      return datasetName(key) + " " + catalog.overlap.only[key] + " 篇";
+    }).join("、");
+    document.getElementById("overlapNote").textContent =
+      "扣掉另外三份之後，只出現在單一一份清單的文章：" + onlyText + "。第二階段旗標和第一階段網址不一致的有 " + catalog.overlap.stage1_flag_mismatches + " 篇。";
+
+    const years = catalog.years;
+    document.getElementById("yearMissing").textContent = "日期無法解析或空白：" + years.missing + " 篇。長條圖合計 " + years.counts.reduce(function (sum, item) { return sum + item.rows; }, 0) + " 篇。";
+    horizontalBars(
+      "yearChart",
+      "years",
+      years.counts.map(function (item) { return String(item.year); }),
+      years.counts.map(function (item) { return item.rows; }),
+      years.counts.map(function () { return ""; }),
+      years.counts.map(function () { return "#60a5fa"; })
+    );
+
+    document.getElementById("sourceCaption").textContent =
+      "看板和 PTT 搜尋關鍵字只算 " + byId.ptt_crawl.source + " 的 " + byId.ptt_crawl.rows + " 篇。team keywords 來自 " + byId.team_keywords.source + "，共 " + byId.team_keywords.rows + " 篇，是另一份搜尋結果。";
+    horizontalBars(
+      "boardChart",
+      "sources",
+      catalog.boards.counts.map(function (item) { return item.name; }),
+      catalog.boards.counts.map(function (item) { return item.rows; }),
+      catalog.boards.counts.map(function () { return ""; }),
+      ["#5eead4", "#60a5fa", "#fbbf24", "#fb7185"]
+    );
+    horizontalBars(
+      "crawlKeywordChart",
+      "sources",
+      catalog.search_keywords.counts.map(function (item) { return item.name; }),
+      catalog.search_keywords.counts.map(function (item) { return item.rows; }),
+      catalog.search_keywords.counts.map(function () { return ""; }),
+      ["#34d399", "#fbbf24", "#a78bfa"]
+    );
+    const teamTop = catalog.team_search_keywords.counts.slice(0, 15);
+    horizontalBars(
+      "teamKeywordChart",
+      "sources",
+      teamTop.map(function (item) { return item.name; }),
+      teamTop.map(function (item) { return item.rows; }),
+      teamTop.map(function () { return ""; }),
+      teamTop.map(function () { return "#a78bfa"; })
+    );
+
+    const incomplete = model.stage1.filter(function (row) { return !row.complete; });
+    doughnut(
+      "reviewChart",
+      "review",
+      ["有詐騙相關內容", "沒有詐騙相關內容", "尚未審查"],
+      [model.contentYes.length, model.contentNo.length, incomplete.length],
+      ["count:yes", "count:no", "count:todo"],
+      ["#5eead4", "#fbbf24", "#64748b"]
+    );
+    document.getElementById("reviewStats").innerHTML = [
+      statButton("count:yes", model.contentYes.length, "有詐騙相關內容"),
+      statButton("count:no", model.contentNo.length, "沒有詐騙相關內容"),
+      statButton("count:todo", incomplete.length, "第一階段尚未審查"),
+    ].join("");
+    const exactArticles = catalog.articles.filter(function (article) { return article.official_exact_status; });
+    remember("official-exact", "文章狀態 exact_match", exactArticles.map(function (article) { return catalogArticleRow(article, stageMaps()); }), "這是官方比對後的文章狀態，不是審查者勾選的「有詐騙相關內容」。");
+    document.getElementById("reviewOfficial").innerHTML =
+      "官方比對的 exact_match 有 " + catalog.official.article_exact_status + " 篇，停止解析名單的精確網址列數是 " + catalog.official.weburl_exact_url_rows + "。" +
+      " <button type=\"button\" class=\"text-link\" data-select=\"official-exact\">查看 exact_match 文章</button>";
+
+    const official = catalog.official;
+    const sameFake = exactArticles.length > 0 && exactArticles.every(function (article) { return article.official_fake_invest_match; });
+    const rows = [
+      [official.weburl.label, official.weburl.rows + " 列／" + official.weburl.unique_hosts + " 個不重複網域值", official.weburl.meaning + official.weburl.host_rule + " 快照 " + official.weburl.snapshot_date + "。"],
+      [official.fake_invest.label, official.fake_invest.rows + " 列／" + official.fake_invest.unique_hosts + " 個不重複網域", official.fake_invest.meaning + " 快照 " + official.fake_invest.snapshot_date + "。"],
+      [official.runtime_blacklist.label, official.runtime_blacklist.rows + " 列／" + official.runtime_blacklist.unique_hosts + " 個不重複網域", official.runtime_blacklist.meaning],
+      ["停止解析名單精確網址列", String(official.weburl_exact_url_rows), "從 PTT 文章抽出的網址，精確命中停止解析名單的列數。"],
+      ["文章狀態 exact_match", String(official.article_exact_status), "交叉比對寫入的文章狀態。不是審查圓餅圖的一部分。" + (sameFake ? " 這幾篇同時命中假投資名單。" : "")],
+      ["假投資名單命中文章", String(official.fake_invest_match_articles), "文章網址對上假投資名單的篇數。"],
+      ["模糊比對", official.fuzzy_url_rows + " 個網址列／" + official.fuzzy_articles + " 篇文章", official.fuzzy_meaning],
+    ];
+    document.getElementById("officialTable").innerHTML = rows.map(function (row) {
+      return "<tr><td>" + escapeHtml(row[0]) + "</td><td>" + escapeHtml(row[1]) + "</td><td>" + escapeHtml(row[2]) + "</td></tr>";
+    }).join("");
+    renderCases();
+  }
+
+  function filteredArticles() {
+    const maps = stageMaps();
+    const query = document.getElementById("caseQuery").value.trim().toLowerCase();
+    const dataset = document.getElementById("caseDataset").value;
+    const review = document.getElementById("caseReview").value;
+    return catalog.articles.filter(function (article) {
+      if (dataset !== "all" && article.datasets.indexOf(dataset) < 0) return false;
+      const parts = articleReview(article, maps);
+      if (review !== "all" && !parts.some(function (part) { return part.id === review; })) return false;
+      if (!query) return true;
+      return (article.title || "").toLowerCase().indexOf(query) >= 0 || (article.url || "").toLowerCase().indexOf(query) >= 0;
+    });
+  }
+
+  function renderCases() {
+    if (!catalog || !model) return;
+    const maps = stageMaps();
+    const rows = filteredArticles().sort(function (a, b) { return (b.year || 0) - (a.year || 0); });
+    const pages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+    if (casePage >= pages) casePage = pages - 1;
+    if (casePage < 0) casePage = 0;
+    const start = casePage * PAGE_SIZE;
+    const slice = rows.slice(start, start + PAGE_SIZE);
+    document.getElementById("caseMeta").textContent = "符合條件 " + rows.length + " 篇，現在顯示 " + (rows.length ? start + 1 : 0) + "–" + (start + slice.length) + "。每頁 " + PAGE_SIZE + " 篇。";
+    document.getElementById("caseTable").innerHTML = slice.map(function (article) {
+      const parts = articleReview(article, maps);
+      const id = "case:" + article.case_id;
+      remember(id, article.title || "（無標題）", [catalogArticleRow(article, maps)], parts.map(function (part) { return part.text; }).join("、"));
+      const when = article.year ? String(article.year) : "日期缺失";
+      return "<tr><td><button type=\"button\" data-select=\"" + escapeHtml(id) + "\">" + escapeHtml(article.title || "（無標題）") + "</button></td><td>" +
+        escapeHtml(article.datasets.map(datasetName).join("、")) + "</td><td>" + escapeHtml(when) + "</td><td><a href=\"" +
+        escapeHtml(article.url) + "\" target=\"_blank\" rel=\"noopener\">" + escapeHtml(article.url) + "</a></td><td>" +
+        escapeHtml(parts.map(function (part) { return part.text; }).join("、")) + "</td></tr>";
+    }).join("");
+    const pager = document.getElementById("casePager");
+    pager.innerHTML = pages > 1
+      ? '<button type="button" id="casePrev" class="btn"' + (casePage === 0 ? " disabled" : "") + ">上一頁</button><button type=\"button\" id=\"caseNext\" class=\"btn\"" + (casePage >= pages - 1 ? " disabled" : "") + ">下一頁</button>"
+      : "";
+    const prev = document.getElementById("casePrev");
+    const next = document.getElementById("caseNext");
+    if (prev) prev.addEventListener("click", function () { casePage -= 1; renderCases(); });
+    if (next) next.addEventListener("click", function () { casePage += 1; renderCases(); });
+  }
+
   function render() {
     destroyCharts();
     chartDefaults();
@@ -470,6 +671,8 @@
     renderCounts();
     renderKeywords();
     renderLinks();
+    renderCatalog();
+    renderCases();
     if (selection && model.selections[selection.id]) selection = model.selections[selection.id];
     renderExplorer();
     showView(activeView);
@@ -490,7 +693,7 @@
     dashboard.hidden = true;
     const itemsUrl = cfg.ITEMS_CSV_URL || "items.csv";
     const stage2Url = cfg.STAGE2_ITEMS_CSV_URL || "stage2_items.csv";
-    const [items, stage2Rows, answers1, answers2, npaPayload] = await Promise.all([
+    const [items, stage2Rows, answers1, answers2, npaPayload, catalogPayload] = await Promise.all([
       parseCsv(itemsUrl),
       parseCsv(stage2Url),
       fetchAnswers(cfg.DATASET_ID || "ptt_candidate"),
@@ -499,8 +702,13 @@
         if (!response.ok) throw new Error("無法讀取 165 彙總");
         return response.json();
       }),
+      fetch("research_catalog.json").then(function (response) {
+        if (!response.ok) throw new Error("無法讀取研究清單彙總");
+        return response.json();
+      }),
     ]);
     npa = npaPayload;
+    catalog = catalogPayload;
     model = buildModel(items, stage2Rows, answers1, answers2);
     render();
   }
@@ -534,6 +742,17 @@
     const button = event.target.closest("[data-select]");
     if (!button) return;
     choose(button.getAttribute("data-select"));
+  });
+
+  ["caseQuery", "caseDataset", "caseReview"].forEach(function (id) {
+    document.getElementById(id).addEventListener("input", function () {
+      casePage = 0;
+      renderCases();
+    });
+    document.getElementById(id).addEventListener("change", function () {
+      casePage = 0;
+      renderCases();
+    });
   });
 
   document.getElementById("reloadBtn").addEventListener("click", function () {
