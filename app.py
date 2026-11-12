@@ -417,10 +417,16 @@ def frontend_files(filename):
     return send_from_directory("docs", filename)
 
 
-if __name__ == "__main__":
-    # 本機開發：python app.py
-    # 正式部署：由 gunicorn 啟動，不會走進這段
-    rag_searcher.update_ptt_database()
+def serve():
+    """啟動網站。不爬 PTT／Dcard，也不覆寫語料 CSV。
+
+    要手動更新語料時，另外執行 run_ptt_crawl.py 或 run_dcard_crawl.py。
+    正式環境由 gunicorn 載入 app，不會呼叫這個函式。
+    """
     port = int(os.getenv("PORT", "5001"))
     # macOS AirPlay 常占用 5000，本機預設改用 5001
     app.run(debug=True, host="127.0.0.1", port=port)
+
+
+if __name__ == "__main__":
+    serve()

@@ -64,6 +64,15 @@ http://127.0.0.1:5001
 本機時，Flask 會順便提供 `docs/` 前端頁面，方便測試。  
 `docs/config.js` 的 `API_BASE_URL` 請保持空字串 `""`。
 
+`python app.py` 只啟動網站。它不會爬 PTT 或 Dcard，也不會覆寫 `ptt_scam_cases.csv`、`dcard_scam_cases.csv`、`scam_165_urls.csv`。165 名單會試著下載到記憶體；下載失敗就讀 repo 裡的本地快照。
+
+要手動更新語料時，另外執行：
+
+```bash
+python run_ptt_crawl.py
+python run_dcard_crawl.py
+```
+
 ## 正式部署
 
 ### A. 部署 Flask Backend 到 Render
@@ -74,30 +83,27 @@ http://127.0.0.1:5001
 
 1. 到 [Render Dashboard](https://dashboard.render.com/)
 2. **New → Blueprint**
-3. 連線 GitHub，選 repo：`anti-scam-LINE-bot`，branch：`main`
-4. Render 會讀取 `render.yaml`
-5. 填入環境變數（金鑰只在這裡填，不要放到 GitHub）：
-   - `GEMINI_API_KEY_1`
-   - `GEMINI_API_KEY_2`（可選）
-   - `GEMINI_API_KEY_3`（可選）
-6. Apply / Create
-7. 部署完成後，記下後端網址，例如：
-   `https://anti-scam-api.onrender.com`
+3. 連線 GitHub，選 repo：`ccf540123/anti-scam`，branch：`main`
+4. 執行個體請選 **Free**（$0）。不要選付費方案。
+5. Render 會讀取 `render.yaml`
+6. 在 Dashboard 填環境變數（不要寫進 GitHub）：
+   - `GEMINI_API_KEY_1`（必填才會呼叫 Gemini；沒有這把金鑰時，網站仍可啟動，AI 分析會走離線文案）
+7. Apply / Create
+8. 部署完成後，先打開 `https://你的服務.onrender.com/api/health`。看到 `{"status":"ok"}` 才算後端可用。目前文件裡舊的 `anti-scam-api.onrender.com` 不是這個 Flask，請不要沿用。
 
 #### 方法二：手動 Web Service
 
 1. **New → Web Service**
-2. 選 repo：`anti-scam-LINE-bot`，branch：`main`
+2. 選 repo：`ccf540123/anti-scam`，branch：`main`
 3. 填這些欄位：
-   - **Name**：`anti-scam-api`
+   - **Name**：`anti-scam-api`（若這個名字已被別的服務占用，換一個新名字）
    - **Language / Runtime**：`Python 3`
    - **Build Command**：`pip install -r requirements.txt`
    - **Start Command**：`gunicorn app:app --bind 0.0.0.0:$PORT --timeout 120`
-   - **Instance type**：Free
+   - **Instance type**：Free（$0）。不要選付費方案。
+   - **Health Check Path**：`/api/health`
 4. **Environment** 新增：
-   - `GEMINI_API_KEY_1` = 你的金鑰
-   - `GEMINI_API_KEY_2` =（可選）
-   - `GEMINI_API_KEY_3` =（可選）
+   - `GEMINI_API_KEY_1` = 你的金鑰（只放在這裡）
    - `FRONTEND_ORIGIN` = `https://ccf540123.github.io`
 5. Create Web Service
 
@@ -109,34 +115,38 @@ https://你的服務名.onrender.com/api/health
 
 看到 `{"status":"ok"}` 代表成功。
 
-> Render 免費方案一段時間沒人用可能會睡著，第一次開啟可能要等十幾秒。
+> Render 免費方案約 15 分鐘沒人用會睡著，下次打開可能要等約 1 分鐘。每個 workspace 一個月有 750 個免費 instance hours。睡著或重新部署時，機器上的暫存檔會消失，所以啟動程序不會把 165 或 PTT 名單寫回磁碟，而是使用 repo 裡的 CSV 快照。
 
 ### B. 部署 Frontend 到 GitHub Pages
 
-1. 編輯 `docs/config.js`，把 API 網址改成 Render 網址：
+現在的 `docs/config.js` 必須維持：
 
 ```js
-window.API_BASE_URL = "https://anti-scam-api.onrender.com";
+window.API_BASE_URL = "";
 ```
 
-2. 把變更 commit / push 到 GitHub
-3. GitHub repo → **Settings → Pages**
-4. Source 選 **Deploy from a branch**
-5. Branch 選 `main`（或你的正式分支），Folder 選 **/docs**
-6. 儲存後等待一兩分鐘
+這一行先不要填。等上面的 `/api/health` 真的回 `{"status":"ok"}` 之後，只把這行空字串換成你的 Render 網址，例如 `window.API_BASE_URL = "https://你的服務.onrender.com";`，再 commit / push。
 
-老師與同學要開的網址通常是：
+Pages 若還沒打開：
+
+1. GitHub repo → **Settings → Pages**
+2. Source 選 **Deploy from a branch**
+3. Branch 選 `main`，Folder 選 **/docs**
+4. 儲存後等一兩分鐘
+
+老師與同學要開的網址是：
 
 ```text
-https://你的GitHub帳號.github.io/anti-scam-LINE-bot/
+https://ccf540123.github.io/anti-scam/
 ```
 
 ## 啟動方式對照
 
 | 情境 | 怎麼啟動 | 誰負責開著 |
 |------|----------|------------|
-| 本機測試 | `python app.py` | 你的電腦要開著 |
-| 正式後端 | Render 自動用 `gunicorn app:app ...` | Render 雲端，不必開筆電 |
+| 本機測試 | `python app.py`（不爬蟲、不覆寫 CSV） | 你的電腦要開著 |
+| 手動更新 PTT／Dcard | `python run_ptt_crawl.py`、`python run_dcard_crawl.py` | 只有你明確執行時才會抓資料 |
+| 正式後端 | Render Free，`gunicorn app:app ...` | Render 雲端，不必開筆電 |
 | 正式前端 | GitHub Pages 托管 `docs/` | GitHub，不必開筆電 |
 
 ## 研究小組 Review（密碼保護）
