@@ -64,63 +64,52 @@ def extract_main_domain(url):
     except Exception:
         return clean_url(url)
 
+def _load_local_165_snapshot(scam_urls):
+    """下載失敗時只讀本地快照，不改寫檔案。"""
+    if not os.path.exists(LOCAL_165_CSV):
+        print("⚠️ 本地無歷史備份檔，改用空集合啟動。")
+        return
+
+    print(f"📂 [165 備份] 下載失敗，改讀本地快照 {LOCAL_165_CSV} ...")
+    try:
+        with open(LOCAL_165_CSV, "r", encoding="utf-8-sig") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                url = row.get("normalized_url")
+                if url:
+                    scam_urls.add(url)
+        print(f"✅ 成功從備份 CSV 恢復了 {len(scam_urls)} 筆詐騙黑名單！")
+    except Exception as file_err:
+        print(f"❌ 讀取本地備份 CSV 失敗: {file_err}，改用空集合啟動。")
+
+
 def load_scam_urls(csv_url):
+    """載入 165 名單到記憶體。
+
+    伺服器啟動可嘗試下載，但無論成敗都不覆寫 scam_165_urls.csv。
+    下載失敗時改讀 repo 裡的本地快照。
+    """
     scam_urls = set()
-    raw_rows_to_save = []  # 👈 用來儲存準備寫入本地 CSV 的原始資料
-    
+
     print("正在從網路下載 165 詐騙網址資料...")
     try:
         response = requests.get(csv_url, verify=False, timeout=10)
         response.raise_for_status()
         response.encoding = "utf-8-sig"
-        
-        # 為了要能重複讀取它做兩件事 (記憶體分析 + 存入 CSV)，我們保留一份 text
-        csv_text = response.text
-        
-        # 1. 正常分析進記憶體的 set 供 Bot 即時比對
-        file = io.StringIO(csv_text)
+
+        file = io.StringIO(response.text)
         reader = csv.DictReader(file)
         for row in reader:
             raw_url = (row.get("WEBURL") or row.get("weburl") or row.get("網域") or row.get("網址") or "").strip()
             normalized = clean_url(raw_url)
             if normalized and normalized != "網址":
                 scam_urls.add(normalized)
-                
-                # 收集原始欄位資料準備等等實體化
-                raw_rows_to_save.append({
-                    "weburl": raw_url,
-                    "normalized_url": normalized
-                })
-        
-        print(f"165 詐騙網址資料載入完成，共 {len(scam_urls)} 筆")
-        
-        # 2. 💾 關鍵改動：將網路下載回來的資料，實體儲存成一份 CSV 檔案
-        if raw_rows_to_save:
-            with open(LOCAL_165_CSV, "w", newline="", encoding="utf-8-sig") as f:
-                writer = csv.DictWriter(f, fieldnames=["weburl", "normalized_url"])
-                writer.writeheader()
-                writer.writerows(raw_rows_to_save)
-            print(f"💾 [165 備份] 成功將資料實體化儲存至：{LOCAL_165_CSV}")
 
+        print(f"165 詐騙網址資料載入完成，共 {len(scam_urls)} 筆（未覆寫 {LOCAL_165_CSV}）")
     except Exception as e:
         print(f"❌ 下載 165 資料失敗: {e}。")
-        
-        # 3. 🛡️ 離線防禦機制：如果下載失敗（如政府 API 斷線），自動回頭讀取上次留下的實體 CSV 檔
-        if os.path.exists(LOCAL_165_CSV):
-            print(f"📂 [165 備份] 啟動本地離線防護，嘗試從舊有的 {LOCAL_165_CSV} 載入資料...")
-            try:
-                with open(LOCAL_165_CSV, "r", encoding="utf-8-sig") as f:
-                    reader = csv.DictReader(f)
-                    for row in reader:
-                        url = row.get("normalized_url")
-                        if url:
-                            scam_urls.add(url)
-                print(f"✅ 成功從備份 CSV 恢復了 {len(scam_urls)} 筆詐騙黑名單！")
-            except Exception as file_err:
-                print(f"❌ 讀取本地備份 CSV 失敗: {file_err}，改用空集合啟動。")
-        else:
-            print("⚠️ 本地無歷史備份檔，改用空集合啟動。")
-            
+        _load_local_165_snapshot(scam_urls)
+
     return scam_urls
 
 # modules/url_checker.py

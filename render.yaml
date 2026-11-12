@@ -1,3 +1,6 @@
+# Render Hobby / Free web service。建立時請選 Free（$0）。
+# 不要改成付費 instance。免費服務閒置約 15 分鐘會睡著，下次請求約等 1 分鐘。
+# 金鑰不要寫進這個檔；sync: false 代表只在 Dashboard 填。
 services:
   - type: web
     name: anti-scam-api
