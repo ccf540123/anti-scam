@@ -62,7 +62,7 @@ http://127.0.0.1:5001
 ```
 
 本機時，Flask 會順便提供 `docs/` 前端頁面，方便測試。  
-`docs/config.js` 的 `API_BASE_URL` 請保持空字串 `""`。
+正式的 `docs/config.js` 指向 `https://anti-scam-line-bot.onrender.com`。若要讓本機頁面打自己電腦上的後端，測試時把 `API_BASE_URL` 暫時改回空字串 `""`。
 
 `python app.py` 只啟動網站。它不會爬 PTT 或 Dcard，也不會覆寫 `ptt_scam_cases.csv`、`dcard_scam_cases.csv`、`scam_165_urls.csv`。165 名單會試著下載到記憶體；下載失敗就讀 repo 裡的本地快照。
 
@@ -89,7 +89,7 @@ python run_dcard_crawl.py
 6. 在 Dashboard 填環境變數（不要寫進 GitHub）：
    - `GEMINI_API_KEY_1`（必填才會呼叫 Gemini；沒有這把金鑰時，網站仍可啟動，AI 分析會走離線文案）
 7. Apply / Create
-8. 部署完成後，先打開 `https://你的服務.onrender.com/api/health`。看到 `{"status":"ok"}` 才算後端可用。目前文件裡舊的 `anti-scam-api.onrender.com` 不是這個 Flask，請不要沿用。
+8. 現在這台服務的網址是 `https://anti-scam-line-bot.onrender.com`。`/api/health` 回 `{"status":"ok"}` 才算可用。不要改用 `anti-scam-api.onrender.com`。
 
 #### 方法二：手動 Web Service
 
@@ -119,13 +119,13 @@ https://你的服務名.onrender.com/api/health
 
 ### B. 部署 Frontend 到 GitHub Pages
 
-現在的 `docs/config.js` 必須維持：
+`docs/config.js` 這一行已經指向現有的 Render 服務：
 
 ```js
-window.API_BASE_URL = "";
+window.API_BASE_URL = "https://anti-scam-line-bot.onrender.com";
 ```
 
-這一行先不要填。等上面的 `/api/health` 真的回 `{"status":"ok"}` 之後，只把這行空字串換成你的 Render 網址，例如 `window.API_BASE_URL = "https://你的服務.onrender.com";`，再 commit / push。
+這一行推上 `main` 之後，GitHub Pages 的分析按鈕才會改打這台後端。
 
 Pages 若還沒打開：
 
