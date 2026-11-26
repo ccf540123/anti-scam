@@ -15,8 +15,8 @@
   color: var(--ink);
   background: var(--bg);
   font-family: "Avenir Next", "PingFang TC", "Noto Sans TC", sans-serif;
-  border-radius: 18px;
-  overflow: hidden;
+  min-height: 100vh;
+  overflow-x: hidden;
 }
 
 .analysis-root h1,
@@ -56,14 +56,15 @@
 .analysis-root .text-link { margin-top: 0.7rem; background: transparent; }
 .analysis-root .error { color: #fb7185; }
 
-.analysis-root .shell { display: grid; grid-template-columns: 220px minmax(0, 1fr); min-height: 70vh; }
+.analysis-root .shell { display: grid; grid-template-columns: 220px minmax(0, 1fr); min-height: 100vh; }
 .analysis-root .sidebar {
   background: var(--side);
   border-right: 1px solid var(--line);
   padding: 1.1rem 0.8rem;
   position: sticky;
-  top: 64px;
-  height: calc(100vh - 64px);
+  top: 0;
+  height: 100vh;
+  overflow: auto;
 }
 .analysis-root .brand { display: block; margin: 0.2rem 0 1rem; font-size: 1rem; }
 .analysis-root .sidebar nav { display: flex; flex-direction: column; gap: 0.25rem; }
@@ -79,7 +80,7 @@
 }
 .analysis-root .sidebar button.is-active { background: #1c2830; color: var(--accent); }
 
-.analysis-root .workspace { min-width: 0; padding: 1rem 1rem 2rem; }
+.analysis-root .workspace { min-width: 0; padding: 1rem 1rem 2rem; overflow-x: auto; }
 .analysis-root .top { display: flex; justify-content: space-between; gap: 0.8rem; align-items: flex-start; margin-bottom: 1rem; }
 .analysis-root .top-actions,
 .analysis-root .pager { display: flex; gap: 0.45rem; flex-wrap: wrap; }
@@ -215,6 +216,72 @@
 }
 .analysis-root .tag.warn { background: var(--warn-soft); color: var(--warn); }
 .analysis-root .tag.old { background: var(--old-soft); color: var(--old); }
+
+.analysis-root .ask-card,
+.analysis-root .share-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 1rem;
+  max-width: 760px;
+}
+.analysis-root .ask-card label,
+.analysis-root .share-card label,
+.analysis-root .share-card legend {
+  display: block;
+  margin: 0.8rem 0 0.35rem;
+  font-weight: 650;
+}
+.analysis-root .ask-card textarea,
+.analysis-root .ask-card input,
+.analysis-root .share-card textarea,
+.analysis-root .share-card input,
+.analysis-root .share-card select {
+  width: 100%;
+  color: var(--ink);
+  background: #0e1218;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0.7rem 0.8rem;
+  font: inherit;
+}
+.analysis-root .ask-card textarea { min-height: 160px; resize: vertical; }
+.analysis-root .share-card textarea { min-height: 140px; resize: vertical; }
+.analysis-root .ask-actions,
+.analysis-root .share-card .checks { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.analysis-root .share-card .checks label { font-weight: 500; margin: 0; }
+.analysis-root .share-card .checks input { width: auto; }
+.analysis-root #resultBox {
+  min-height: 120px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin-top: 1rem;
+  padding: 0.9rem;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--card-2);
+  line-height: 1.6;
+}
+.analysis-root .hint { color: var(--muted); line-height: 1.55; }
+.analysis-root .warning {
+  background: var(--warn-soft);
+  color: var(--warn);
+  border-radius: 10px;
+  padding: 0.7rem 0.8rem;
+}
+.analysis-root .hp {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+.analysis-root .side-foot {
+  display: block;
+  margin-top: 1.2rem;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
 
 @media (max-width: 900px) {
   .analysis-root .shell { grid-template-columns: 1fr; }

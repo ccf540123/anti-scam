@@ -4,306 +4,250 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>反詐騙檢測與研究</title>
-  <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="review/dashboard.css">
 </head>
-<body>
-  <header class="site-header">
-    <a class="logo" href="#detect">反詐騙檢測與研究</a>
-    <nav class="site-nav" aria-label="主要分頁">
-      <a href="#detect" data-nav="detect">檢測</a>
-      <a href="#analysis" data-nav="analysis">研究分析</a>
-      <a href="#dataset" data-nav="dataset">開放資料集</a>
-      <a href="#share" data-nav="share">分享經驗</a>
-      <a href="#leaderboard" data-nav="leaderboard">排行榜</a>
-    </nav>
-  </header>
+<body class="analysis-root">
+  <div class="shell">
+    <aside id="sidebar" class="sidebar">
+      <strong class="brand">反詐騙檢測與研究</strong>
+      <nav id="sideNav" aria-label="主要功能">
+        <button type="button" data-view="detect">AI 檢測</button>
+        <button type="button" data-view="overview">資料總覽</button>
+        <button type="button" data-view="overlap">清單交叉</button>
+        <button type="button" data-view="years">年份</button>
+        <button type="button" data-view="sources">來源</button>
+        <button type="button" data-view="review">人工審查</button>
+        <button type="button" data-view="official">官方名單</button>
+        <button type="button" data-view="cases">案例查詢</button>
+        <button type="button" data-view="counts">數量</button>
+        <button type="button" data-view="keywords">關鍵字</button>
+        <button type="button" data-view="links">文中的網站</button>
+        <button type="button" data-view="share">分享經驗</button>
+      </nav>
+      <a class="side-foot" href="https://ccf540123.github.io/anti-scam/review/">研究小組入口</a>
+    </aside>
+    <div id="navScrim" class="scrim" hidden></div>
 
-  <main class="site-main">
-    <section id="detect">
-      <div class="narrow">
-        <h1>反詐騙檢測助手</h1>
-        <p class="lead">貼上可疑網址、完整訊息，或上傳截圖。系統會用 165 名單與 AI 幫你看風險。名單命中不是法院認定，沒有命中也不代表安全。</p>
-        <section class="panel">
+    <div class="workspace">
+      <header class="top">
+        <button id="menuBtn" type="button" class="btn menu-btn" aria-expanded="false">選單</button>
+        <div><h1 id="viewTitle">資料總覽</h1></div>
+        <div class="top-actions">
+          <button id="reloadBtn" type="button" class="btn">重新讀取</button>
+        </div>
+      </header>
+
+      <section id="detect" data-panel="detect" hidden>
+        <div class="ask-card">
+          <h2>AI 檢測</h2>
+          <p class="caption">貼上可疑網址、完整訊息，或上傳截圖。系統會用 165 名單與 AI 幫你看風險。名單命中不是法院認定，沒有命中也不代表安全。</p>
           <label for="userText">可疑內容</label>
           <textarea id="userText" placeholder="例如：請立即點擊 https://example.com 完成驗證，否則帳戶將被停用"></textarea>
-          <div class="file-box">
-            <label for="userImage">或上傳可疑截圖</label>
-            <input id="userImage" type="file" accept="image/*">
+          <label for="userImage">或上傳可疑截圖</label>
+          <input id="userImage" type="file" accept="image/*">
+          <div class="ask-actions">
+            <button id="checkBtn" type="button" class="btn primary">分析文字</button>
+            <button id="checkImageBtn" type="button" class="btn">分析圖片</button>
+            <button id="clearBtn" type="button" class="btn">清空</button>
           </div>
-          <div class="actions">
-            <button id="checkBtn" type="button">分析文字</button>
-            <button id="checkImageBtn" type="button">分析圖片</button>
-            <button id="clearBtn" type="button">清空</button>
-          </div>
-          <p class="result-title">分析結果</p>
           <div id="resultBox">結果會顯示在這裡。</div>
           <p class="hint">文字太短時，建議貼上完整對話。圖片請選對話截圖、簡訊或可疑網頁。</p>
-        </section>
-      </div>
-    </section>
+        </div>
+      </section>
 
-    <section id="analysis" class="analysis-root" hidden>
-      <div class="shell">
-        <aside id="sidebar" class="sidebar">
-          <strong class="brand">詐騙研究分析</strong>
-          <nav id="sideNav" aria-label="分析區塊">
-            <button type="button" data-view="overview">資料總覽</button>
-            <button type="button" data-view="overlap">清單交叉</button>
-            <button type="button" data-view="years">年份</button>
-            <button type="button" data-view="sources">來源</button>
-            <button type="button" data-view="review">人工審查</button>
-            <button type="button" data-view="official">官方名單</button>
-            <button type="button" data-view="cases">案例查詢</button>
-            <button type="button" data-view="counts">數量</button>
-            <button type="button" data-view="keywords">關鍵字</button>
-            <button type="button" data-view="links">文中的網站</button>
-          </nav>
-        </aside>
-        <div id="navScrim" class="scrim" hidden></div>
-        <div class="workspace">
-          <header class="top">
-            <button id="menuBtn" type="button" class="btn menu-btn" aria-expanded="false">選單</button>
-            <div><h1 id="viewTitle">資料總覽</h1></div>
-            <div class="top-actions">
-              <a class="btn" href="#dataset">開放資料集</a>
-              <button id="reloadBtn" type="button" class="btn">重新讀取</button>
-            </div>
-          </header>
-          <p id="loadError" class="error" hidden></p>
-          <p id="loading" class="lead">正在讀取清單與審查答案…</p>
-          <div id="dashboard" hidden>
-            <div class="content-grid">
-              <main>
-                <section data-panel="overview">
-                  <h2>資料總覽</h2>
-                  <p class="caption">每列是一份獨立清單。筆數不能相加，也不是確認案例數。人審標籤是議題相關，不是詐騙是否成立。公開頁不顯示 PTT 全文、審查者姓名或備註。</p>
-                  <p class="caption"><a href="#dataset">下載去識別化資料集</a> · <a href="#share">分享自己的經驗</a></p>
-                  <table class="data-table">
-                    <thead><tr><th>清單</th><th>筆數</th><th>來源</th><th>檔案時間</th></tr></thead>
-                    <tbody id="overviewTable"></tbody>
-                  </table>
-                  <p id="overviewUnion" class="caption"></p>
-                </section>
-                <section data-panel="overlap" hidden>
-                  <h2>清單交叉</h2>
-                  <p class="caption">重疊以文章網址正規化後比較：去掉尾端斜線，主機名稱轉成小寫。只出現在某一份清單的篇數，是扣掉另外三份之後剩下的網址。</p>
-                  <table class="data-table">
-                    <thead><tr><th>比較</th><th>兩邊都有</th><th>只在左邊</th><th>只在右邊</th></tr></thead>
-                    <tbody id="overlapTable"></tbody>
-                  </table>
-                  <p id="overlapNote" class="caption"></p>
-                </section>
-                <section data-panel="years" hidden>
-                  <h2>PTT 文章年份</h2>
-                  <p class="caption">只算 ptt_scam_cases.csv。年份來自發布時間，缺日期的文章不放進長條圖。</p>
-                  <div class="chart-card"><div class="chart-box tall"><canvas id="yearChart"></canvas></div></div>
-                  <p id="yearMissing" class="caption"></p>
-                </section>
-                <section data-panel="sources" hidden>
-                  <h2>來源</h2>
-                  <p id="sourceCaption" class="caption"></p>
-                  <div class="chart-grid">
-                    <div class="chart-card"><h3>PTT 看板</h3><div class="chart-box"><canvas id="boardChart"></canvas></div></div>
-                    <div class="chart-card"><h3>PTT 搜尋關鍵字</h3><div class="chart-box"><canvas id="crawlKeywordChart"></canvas></div></div>
-                  </div>
-                  <h3>team keywords 搜尋詞（前 15 名）</h3>
-                  <div class="chart-box tall"><canvas id="teamKeywordChart"></canvas></div>
-                </section>
-                <section data-panel="review" hidden>
-                  <h2>人工審查</h2>
-                  <p class="caption">圓餅圖只回答第一階段「文章內容是否包含詐騙相關資訊」。它不是確認詐騙案例。標籤定義見開放資料集。</p>
-                  <div class="chart-card"><div class="chart-box"><canvas id="reviewChart"></canvas></div></div>
-                  <div class="stat-grid" id="reviewStats"></div>
-                  <p id="reviewOfficial" class="caption"></p>
-                </section>
-                <section data-panel="official" hidden>
-                  <h2>官方名單比對</h2>
-                  <p class="caption">三份名單的單位不同。網站列數、黑名單網域和 PTT 文章命中不能加在一起。命中不等於詐騙成立。</p>
-                  <table class="data-table">
-                    <thead><tr><th>項目</th><th>數字</th><th>意義</th></tr></thead>
-                    <tbody id="officialTable"></tbody>
-                  </table>
-                </section>
-                <section data-panel="cases" hidden>
-                  <h2>案例查詢</h2>
-                  <p class="caption">一列是一個不重複文章網址。這裡只顯示標題、清單與網址，不顯示全文。</p>
-                  <div class="filters">
-                    <input id="caseQuery" type="search" placeholder="搜尋標題或網址">
-                    <select id="caseDataset">
-                      <option value="all">全部清單</option>
-                      <option value="ptt_crawl">PTT 爬蟲</option>
-                      <option value="stage1">第一階段</option>
-                      <option value="stage2">第二階段</option>
-                      <option value="team_keywords">team keywords</option>
-                    </select>
-                    <select id="caseReview">
-                      <option value="all">全部審查狀態</option>
-                      <option value="stage1_yes">有詐騙相關內容</option>
-                      <option value="stage1_no">沒有詐騙相關內容</option>
-                      <option value="stage1_todo">第一階段尚未審查</option>
-                      <option value="stage2_graded">第二階段已填 A／B／C</option>
-                      <option value="stage2_todo">第二階段尚未審查</option>
-                      <option value="not_in_review">未進入審查清單</option>
-                      <option value="official_exact">文章狀態 exact_match</option>
-                    </select>
-                  </div>
-                  <p id="caseMeta" class="caption"></p>
-                  <table class="data-table">
-                    <thead><tr><th>標題</th><th>清單</th><th>日期</th><th>網址</th><th>審查狀態</th></tr></thead>
-                    <tbody id="caseTable"></tbody>
-                  </table>
-                  <div id="casePager" class="pager"></div>
-                </section>
-                <section data-panel="counts" hidden>
-                  <h2>分析了多少篇</h2>
-                  <p class="caption">圓餅圖是第一階段清單。前兩類是審查者對「文章內容是否包含詐騙相關資訊」的回答。尚未審查是還沒填完的文章。這三類都不是 Spam 或 Clean。</p>
-                  <div class="chart-card"><div class="chart-box"><canvas id="countChart"></canvas></div></div>
-                  <div class="stat-grid" id="countStats"></div>
-                  <p id="countNote" class="caption"></p>
-                </section>
-                <section data-panel="keywords" hidden>
-                  <h2>審查者寫下的關鍵字</h2>
-                  <p class="caption">只算勾選「有詐騙相關內容」的文章。公開前會再掃一次電話與帳號樣式。</p>
-                  <div id="wordCloud" class="cloud"></div>
-                  <h3>前 20 名（篇）</h3>
-                  <div class="chart-box tall"><canvas id="keywordBar"></canvas></div>
-                </section>
-                <section data-panel="links" hidden>
-                  <p id="linkCaption" class="caption"></p>
-                  <div class="chart-box tall"><canvas id="linkBar"></canvas></div>
-                  <table class="domain-table">
-                    <thead><tr><th>網域</th><th>篇文章數</th></tr></thead>
-                    <tbody id="linkTable"></tbody>
-                  </table>
-                </section>
-              </main>
-              <aside id="explorer" class="explorer">
-                <h2 id="explorerTitle">文章探索</h2>
-                <p id="explorerMeta" class="caption">點圖表或關鍵字，這裡列出對應文章。公開頁不放全文。</p>
-                <div id="explorerList"></div>
-                <div id="explorerPager" class="pager"></div>
-              </aside>
-            </div>
-          </div>
+      <section id="share" data-panel="share" hidden>
+        <div class="share-card">
+          <h2>分享經驗</h2>
+          <p class="caption">這不是報案。緊急或已經受害，請打 165 或聯絡警方。送出後會先審核。</p>
+          <form id="shareForm">
+            <div class="warning">請不要填真實姓名、電話、銀行帳號、身分證、LINE ID、完整地址，也不要寫出可以認出別人的資料。</div>
+            <label class="hp" for="companyWebsite">公司網站</label>
+            <input class="hp" id="companyWebsite" name="company_website" tabindex="-1" autocomplete="off">
+            <label for="displayName">暱稱（可不填）</label>
+            <input id="displayName" type="text" maxlength="20" placeholder="不填就用系統代號">
+            <label class="check-line"><input id="isAnonymous" type="checkbox" checked> 匿名。勾選時公開頁只顯示系統代號。</label>
+            <label for="yearOrPeriod">大約什麼時候（必填）</label>
+            <input id="yearOrPeriod" type="text" maxlength="40" placeholder="例如 2024 年" required>
+            <label for="regionInput">縣市（可不填）</label>
+            <select id="regionInput">
+              <option value="">不填</option>
+              <option>台北市</option><option>新北市</option><option>桃園市</option><option>台中市</option>
+              <option>台南市</option><option>高雄市</option><option>基隆市</option><option>新竹市</option>
+              <option>嘉義市</option><option>新竹縣</option><option>苗栗縣</option><option>彰化縣</option>
+              <option>南投縣</option><option>雲林縣</option><option>嘉義縣</option><option>屏東縣</option>
+              <option>宜蘭縣</option><option>花蓮縣</option><option>台東縣</option><option>澎湖縣</option>
+              <option>金門縣</option><option>連江縣</option><option>不願提供</option>
+            </select>
+            <label for="caseNatureSelf">你是誰（必填）</label>
+            <select id="caseNatureSelf" required>
+              <option value="">請選擇</option>
+              <option>我是當事人</option>
+              <option>我轉述親友</option>
+              <option>我僅提供手法觀察</option>
+            </select>
+            <label for="outcomeSelf">結果自述（必填）</label>
+            <select id="outcomeSelf" required>
+              <option value="">請選擇</option>
+              <option>有損失</option>
+              <option>沒有損失</option>
+              <option>不確定</option>
+            </select>
+            <label for="amountRange">金額區間（可不填）</label>
+            <select id="amountRange">
+              <option value="">不填</option>
+              <option>0</option><option>1–1千</option><option>1千–1萬</option><option>1萬–10萬</option>
+              <option>10萬–100萬</option><option>100萬以上</option><option>不願提供</option>
+            </select>
+            <fieldset>
+              <legend>接觸管道（可不選）</legend>
+              <div class="checks">
+                <label><input type="checkbox" name="channel" value="電話"> 電話</label>
+                <label><input type="checkbox" name="channel" value="簡訊"> 簡訊</label>
+                <label><input type="checkbox" name="channel" value="LINE"> LINE</label>
+                <label><input type="checkbox" name="channel" value="Facebook"> Facebook</label>
+                <label><input type="checkbox" name="channel" value="IG"> IG</label>
+                <label><input type="checkbox" name="channel" value="購物平台"> 購物平台</label>
+                <label><input type="checkbox" name="channel" value="ATM／超商"> ATM／超商</label>
+                <label><input type="checkbox" name="channel" value="電子郵件"> 電子郵件</label>
+                <label><input type="checkbox" name="channel" value="其他"> 其他</label>
+              </div>
+            </fieldset>
+            <label for="alreadyReported">是否曾向 165 或警方反映</label>
+            <select id="alreadyReported">
+              <option value="">不填</option>
+              <option>是</option>
+              <option>否</option>
+              <option>不確定</option>
+            </select>
+            <p class="hint">報案或提告本身不會被當成已確認詐騙。</p>
+            <label for="narrativeInput">經驗描述（80 到 4000 字）</label>
+            <textarea id="narrativeInput" minlength="80" maxlength="4000" required placeholder="用自己的話說發生了什麼。不要貼電話、帳號、身分證或聊天 ID。"></textarea>
+            <p id="piiWarning" class="warning" hidden>這段裡好像有電話、帳號、Email 或證件字號。送出前請先刪掉。伺服器仍會再遮蔽一次。</p>
+            <label class="check-line"><input id="consentResearch" type="checkbox"> 我同意以去識別化形式供這個專題使用。</label>
+            <label class="check-line"><input id="consentAi" type="checkbox"> 我同意由後端程式與 AI 整理這段經驗。</label>
+            <button id="submitBtn" type="submit" class="btn primary">送出待審</button>
+            <p id="submitStatus" class="hint" role="status"></p>
+          </form>
+        </div>
+      </section>
+
+      <p id="loadError" class="error" hidden></p>
+      <p id="loading" class="lead">正在讀取清單與審查答案…</p>
+      <div id="dashboard" hidden>
+        <div class="content-grid">
+          <main>
+            <section data-panel="overview">
+              <h2>資料總覽</h2>
+              <p class="caption">每列是一份獨立清單。四份筆數不能相加，下面的聯集也不是確認案例數。</p>
+              <table class="data-table">
+                <thead><tr><th>清單</th><th>筆數</th><th>來源</th><th>檔案時間</th></tr></thead>
+                <tbody id="overviewTable"></tbody>
+              </table>
+              <p id="overviewUnion" class="caption"></p>
+            </section>
+            <section data-panel="overlap" hidden>
+              <h2>清單交叉</h2>
+              <p class="caption">重疊以文章網址正規化後比較：去掉尾端斜線，主機名稱轉成小寫。只出現在某一份清單的篇數，是扣掉另外三份之後剩下的網址。</p>
+              <table class="data-table">
+                <thead><tr><th>比較</th><th>兩邊都有</th><th>只在左邊</th><th>只在右邊</th></tr></thead>
+                <tbody id="overlapTable"></tbody>
+              </table>
+              <p id="overlapNote" class="caption"></p>
+            </section>
+            <section data-panel="years" hidden>
+              <h2>PTT 文章年份</h2>
+              <p class="caption">只算 ptt_scam_cases.csv。年份來自發布時間，缺日期的文章不放進長條圖。</p>
+              <div class="chart-card"><div class="chart-box tall"><canvas id="yearChart"></canvas></div></div>
+              <p id="yearMissing" class="caption"></p>
+            </section>
+            <section data-panel="sources" hidden>
+              <h2>來源</h2>
+              <p id="sourceCaption" class="caption"></p>
+              <div class="chart-grid">
+                <div class="chart-card"><h3>PTT 看板</h3><div class="chart-box"><canvas id="boardChart"></canvas></div></div>
+                <div class="chart-card"><h3>PTT 搜尋關鍵字</h3><div class="chart-box"><canvas id="crawlKeywordChart"></canvas></div></div>
+              </div>
+              <h3>team keywords 搜尋詞（前 15 名）</h3>
+              <div class="chart-box tall"><canvas id="teamKeywordChart"></canvas></div>
+            </section>
+            <section data-panel="review" hidden>
+              <h2>人工審查</h2>
+              <p class="caption">圓餅圖只回答第一階段「文章內容是否包含詐騙相關資訊」。它不是確認詐騙案例。官方名單命中另外列在下方，沒有算進圓餅圖。</p>
+              <div class="chart-card"><div class="chart-box"><canvas id="reviewChart"></canvas></div></div>
+              <div class="stat-grid" id="reviewStats"></div>
+              <p id="reviewOfficial" class="caption"></p>
+            </section>
+            <section data-panel="official" hidden>
+              <h2>官方名單比對</h2>
+              <p class="caption">三份名單的單位不同。網站列數、黑名單網域和 PTT 文章命中不能加在一起。命中不等於詐騙成立。</p>
+              <table class="data-table">
+                <thead><tr><th>項目</th><th>數字</th><th>意義</th></tr></thead>
+                <tbody id="officialTable"></tbody>
+              </table>
+            </section>
+            <section data-panel="cases" hidden>
+              <h2>案例查詢</h2>
+              <p class="caption">一列是一個不重複文章網址。審查狀態來自人工填答；沒有進入審查清單的文章不會被標成尚未審查。</p>
+              <div class="filters">
+                <input id="caseQuery" type="search" placeholder="搜尋標題或網址">
+                <select id="caseDataset">
+                  <option value="all">全部清單</option>
+                  <option value="ptt_crawl">PTT 爬蟲</option>
+                  <option value="stage1">第一階段</option>
+                  <option value="stage2">第二階段</option>
+                  <option value="team_keywords">team keywords</option>
+                </select>
+                <select id="caseReview">
+                  <option value="all">全部審查狀態</option>
+                  <option value="stage1_yes">有詐騙相關內容</option>
+                  <option value="stage1_no">沒有詐騙相關內容</option>
+                  <option value="stage1_todo">第一階段尚未審查</option>
+                  <option value="stage2_graded">第二階段已填 A／B／C</option>
+                  <option value="stage2_todo">第二階段尚未審查</option>
+                  <option value="not_in_review">未進入審查清單</option>
+                  <option value="official_exact">文章狀態 exact_match</option>
+                </select>
+              </div>
+              <p id="caseMeta" class="caption"></p>
+              <table class="data-table">
+                <thead><tr><th>標題</th><th>清單</th><th>日期</th><th>網址</th><th>審查狀態</th></tr></thead>
+                <tbody id="caseTable"></tbody>
+              </table>
+              <div id="casePager" class="pager"></div>
+            </section>
+            <section data-panel="counts" hidden>
+              <h2>分析了多少篇</h2>
+              <p class="caption">圓餅圖是第一階段清單。前兩類是審查者對「文章內容是否包含詐騙相關資訊」的回答。尚未審查是還沒填完的文章。這三類都不是 Spam 或 Clean。</p>
+              <div class="chart-card"><div class="chart-box"><canvas id="countChart"></canvas></div></div>
+              <div class="stat-grid" id="countStats"></div>
+              <p id="countNote" class="caption"></p>
+            </section>
+            <section data-panel="keywords" hidden>
+              <h2>審查者寫下的關鍵字</h2>
+              <p class="caption">只算勾選「有詐騙相關內容」的文章。詞是人寫進審查結果的，同一篇重複的詞只算一次。</p>
+              <div id="wordCloud" class="cloud"></div>
+              <h3>前 20 名（篇）</h3>
+              <div class="chart-box tall"><canvas id="keywordBar"></canvas></div>
+            </section>
+            <section data-panel="links" hidden>
+              <p id="linkCaption" class="caption"></p>
+              <div class="chart-box tall"><canvas id="linkBar"></canvas></div>
+              <table class="domain-table">
+                <thead><tr><th>網域</th><th>篇文章數</th></tr></thead>
+                <tbody id="linkTable"></tbody>
+              </table>
+            </section>
+          </main>
+          <aside id="explorer" class="explorer">
+            <h2 id="explorerTitle">文章探索</h2>
+            <p id="explorerMeta" class="caption">點圖表或關鍵字，這裡列出對應文章。</p>
+            <div id="explorerList"></div>
+            <div id="explorerPager" class="pager"></div>
+          </aside>
         </div>
       </div>
-    </section>
-
-    <section id="dataset" hidden>
-      <div class="narrow">
-        <h1>開放資料集</h1>
-        <p class="lead">CC0 1.0 公有領域。任何人可以自由使用。這不是已判決的詐騙名單。</p>
-        <div class="warning">
-          <strong>請先讀這三句。</strong>
-          <p>人審標籤是「議題相不相關」，不是詐騙是否成立，也不是 Spam／Clean。</p>
-          <p>官方名單命中不等於詐騙成立，沒有命中也不等於安全。</p>
-          <p>第一階段 1,190 列與第二階段 116 列是兩份清單，中間有重疊，不能加總成確認案例數。公開檔沒有 PTT 全文、審查者、備註或逐字引句。</p>
-        </div>
-        <p id="datasetMeta" class="hint">正在讀取 dataset_manifest.json …</p>
-        <div id="datasetFiles" class="file-list"></div>
-        <h2>資料卡</h2>
-        <pre id="datasheetBox" class="panel">正在讀取 DATASHEET.md …</pre>
-        <p class="hint"><a href="dataset/CITATION.txt">引用格式</a> · <a href="dataset/LICENSE.md">CC0 授權</a> · <a href="dataset/SHA256SUMS">SHA256SUMS</a></p>
-      </div>
-    </section>
-
-    <section id="share" hidden>
-      <div class="narrow">
-        <h1>分享被詐騙或疑似被詐的經驗</h1>
-        <p class="lead">這不是報案。緊急或已經受害，請打 165 或聯絡警方。送出後先由研究小組審核，通過前不會出現在排行榜或統計。</p>
-        <form id="shareForm" class="panel stack">
-          <div class="warning">請不要填真實姓名、電話、銀行帳號、身分證、LINE ID、完整地址，也不要寫出可以認出別人的資料。</div>
-          <label class="hp" for="companyWebsite">公司網站</label>
-          <input class="hp" id="companyWebsite" name="company_website" tabindex="-1" autocomplete="off">
-          <label for="displayName">暱稱（可不填）</label>
-          <input id="displayName" type="text" maxlength="20" placeholder="不填就用系統代號">
-          <label class="check-line"><input id="isAnonymous" type="checkbox" checked> 匿名。勾選時即使填了暱稱，公開頁也只顯示系統代號。</label>
-          <label for="yearOrPeriod">大約什麼時候（必填，不要寫到交易序號）</label>
-          <input id="yearOrPeriod" type="text" maxlength="40" placeholder="例如 2024 年，或 2023–2024" required>
-          <label for="regionInput">縣市（可不填）</label>
-          <select id="regionInput">
-            <option value="">不填</option>
-            <option>台北市</option><option>新北市</option><option>桃園市</option><option>台中市</option>
-            <option>台南市</option><option>高雄市</option><option>基隆市</option><option>新竹市</option>
-            <option>嘉義市</option><option>新竹縣</option><option>苗栗縣</option><option>彰化縣</option>
-            <option>南投縣</option><option>雲林縣</option><option>嘉義縣</option><option>屏東縣</option>
-            <option>宜蘭縣</option><option>花蓮縣</option><option>台東縣</option><option>澎湖縣</option>
-            <option>金門縣</option><option>連江縣</option><option>不願提供</option>
-          </select>
-          <label for="caseNatureSelf">你是誰（必填）</label>
-          <select id="caseNatureSelf" required>
-            <option value="">請選擇</option>
-            <option>我是當事人</option>
-            <option>我轉述親友</option>
-            <option>我僅提供手法觀察</option>
-          </select>
-          <label for="outcomeSelf">結果自述（必填，這不是最終判定）</label>
-          <select id="outcomeSelf" required>
-            <option value="">請選擇</option>
-            <option>有損失</option>
-            <option>沒有損失</option>
-            <option>不確定</option>
-          </select>
-          <label for="amountRange">金額區間（可不填，不要填到個位數）</label>
-          <select id="amountRange">
-            <option value="">不填</option>
-            <option>0</option><option>1–1千</option><option>1千–1萬</option><option>1萬–10萬</option>
-            <option>10萬–100萬</option><option>100萬以上</option><option>不願提供</option>
-          </select>
-          <fieldset>
-            <legend>接觸管道（可不選）</legend>
-            <div class="checks">
-              <label><input type="checkbox" name="channel" value="電話"> 電話</label>
-              <label><input type="checkbox" name="channel" value="簡訊"> 簡訊</label>
-              <label><input type="checkbox" name="channel" value="LINE"> LINE</label>
-              <label><input type="checkbox" name="channel" value="Facebook"> Facebook</label>
-              <label><input type="checkbox" name="channel" value="IG"> IG</label>
-              <label><input type="checkbox" name="channel" value="購物平台"> 購物平台</label>
-              <label><input type="checkbox" name="channel" value="ATM／超商"> ATM／超商</label>
-              <label><input type="checkbox" name="channel" value="電子郵件"> 電子郵件</label>
-              <label><input type="checkbox" name="channel" value="其他"> 其他</label>
-            </div>
-          </fieldset>
-          <label for="alreadyReported">是否曾向 165 或警方反映</label>
-          <select id="alreadyReported">
-            <option value="">不填</option>
-            <option>是</option>
-            <option>否</option>
-            <option>不確定</option>
-          </select>
-          <p class="hint">報案或提告本身不會被當成「已確認詐騙」。</p>
-          <label for="narrativeInput">經驗描述（80 到 4000 字）</label>
-          <textarea id="narrativeInput" minlength="80" maxlength="4000" required placeholder="用自己的話說發生了什麼。不要貼電話、帳號、身分證或聊天 ID。"></textarea>
-          <p id="piiWarning" class="warning" hidden>這段裡好像有電話、帳號、Email 或證件字號。送出前請先刪掉。伺服器仍會再遮蔽一次。</p>
-          <label class="check-line"><input id="consentResearch" type="checkbox"> 我同意以去識別化形式，供這個專題做研究與公開統計。</label>
-          <label class="check-line"><input id="consentAi" type="checkbox"> 我同意由後端程式與 AI 把這段經驗整理成結構化欄位。</label>
-          <button id="submitBtn" type="submit">送出待審</button>
-          <p id="submitStatus" class="hint" role="status"></p>
-        </form>
-      </div>
-    </section>
-
-    <section id="leaderboard" hidden>
-      <div class="narrow">
-        <h1>已核准經驗排行榜</h1>
-        <p class="lead">只計算審核通過的篇數。同一篇重複內容只計一次。沒有通過的不會上榜。這些是群眾自述，尚未獨立查證，不能和 PTT 人審數字加在一起。</p>
-        <p id="crowdStats" class="warning">讀取中…</p>
-        <div class="table-wrap">
-          <table class="simple">
-            <thead><tr><th>名次</th><th>代號</th><th>核准篇數</th></tr></thead>
-            <tbody id="leaderTable"></tbody>
-          </table>
-        </div>
-        <h2>已核准摘要</h2>
-        <div id="crowdList" class="card-list"></div>
-      </div>
-    </section>
-  </main>
-
-  <footer class="site-footer">
-    <a href="review/">研究小組審查（需登入）</a>
-  </footer>
+    </div>
+  </div>
 
   <script src="config.js"></script>
   <script src="review/config.js"></script>
@@ -322,17 +266,5 @@
     };
   </script>
   <script src="review/dashboard.js"></script>
-  <script>
-    fetch("dataset/DATASHEET.md")
-      .then(function (response) { return response.text(); })
-      .then(function (text) {
-        var box = document.getElementById("datasheetBox");
-        if (box) box.textContent = text;
-      })
-      .catch(function () {
-        var box = document.getElementById("datasheetBox");
-        if (box) box.textContent = "資料卡讀取失敗。";
-      });
-  </script>
 </body>
 </html>
