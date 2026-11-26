@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>反詐騙檢測與研究</title>
-  <link rel="stylesheet" href="review/dashboard.css">
+  <link rel="stylesheet" href="review/dashboard.css?v=4">
 </head>
 <body class="analysis-root">
   <div class="shell">
@@ -33,7 +33,7 @@
         <button id="menuBtn" type="button" class="btn menu-btn" aria-expanded="false">選單</button>
         <div><h1 id="viewTitle">資料總覽</h1></div>
         <div class="top-actions">
-          <button id="reloadBtn" type="button" class="btn">重新讀取</button>
+          <button id="reloadBtn" type="button" class="btn" hidden>重新讀取</button>
         </div>
       </header>
 
@@ -43,7 +43,9 @@
           <label for="userText">可疑內容</label>
           <textarea id="userText" placeholder="例如：請立即點擊 https://example.com 完成驗證，否則帳戶將被停用"></textarea>
           <label for="userImage">或上傳可疑截圖</label>
-          <input id="userImage" type="file" accept="image/*">
+          <div class="file-row">
+            <input id="userImage" type="file" accept="image/*">
+          </div>
           <div class="ask-actions">
             <button id="checkBtn" type="button" class="btn primary">分析文字</button>
             <button id="checkImageBtn" type="button" class="btn">分析圖片</button>
@@ -63,7 +65,7 @@
             <input class="hp" id="companyWebsite" name="company_website" tabindex="-1" autocomplete="off">
             <label for="displayName">暱稱（可不填）</label>
             <input id="displayName" type="text" maxlength="20" placeholder="不填就用系統代號">
-            <label class="check-line"><input id="isAnonymous" type="checkbox" checked> 匿名。勾選時公開頁只顯示系統代號。</label>
+            <label class="check-line" for="isAnonymous"><input id="isAnonymous" type="checkbox" checked><span>匿名。勾選時公開頁只顯示系統代號。</span></label>
             <label for="yearOrPeriod">大約什麼時候（必填）</label>
             <input id="yearOrPeriod" type="text" maxlength="40" placeholder="例如 2024 年" required>
             <label for="regionInput">縣市（可不填）</label>
@@ -121,8 +123,8 @@
             <label for="narrativeInput">經驗描述（80 到 4000 字）</label>
             <textarea id="narrativeInput" minlength="80" maxlength="4000" required placeholder="用自己的話說發生了什麼。不要貼電話、帳號、身分證或聊天 ID。"></textarea>
             <p id="piiWarning" class="warning" hidden>這段裡好像有電話、帳號、Email 或證件字號。送出前請先刪掉。伺服器仍會再遮蔽一次。</p>
-            <label class="check-line"><input id="consentResearch" type="checkbox"> 我同意以去識別化形式供這個專題使用。</label>
-            <label class="check-line"><input id="consentAi" type="checkbox"> 我同意由後端程式與 AI 整理這段經驗。</label>
+            <label class="check-line" for="consentResearch"><input id="consentResearch" type="checkbox"><span>我同意以去識別化形式供這個專題使用。</span></label>
+            <label class="check-line" for="consentAi"><input id="consentAi" type="checkbox"><span>我同意由後端程式與 AI 整理這段經驗。</span></label>
             <button id="submitBtn" type="submit" class="btn primary">送出待審</button>
             <p id="submitStatus" class="hint" role="status"></p>
           </form>
