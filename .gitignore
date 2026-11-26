@@ -11,6 +11,8 @@ __pycache__/
 .DS_Store
 *.swp
 *~
+supabase/.temp/
+supabase/.branches/
 .vscode/
 *.Zone.Identifier
 data/review/**/fuzzy_manual_answers.json

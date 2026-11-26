@@ -1,0 +1,89 @@
+{
+  "name": "反詐騙專題 PTT 議題相關性資料集",
+  "version": "v0.1",
+  "license": "CC0-1.0",
+  "frozen_at": "2026-11-26",
+  "label_meaning": "topic_relevance_not_scam_truth",
+  "answers_snapshot": null,
+  "do_not_sum": "stage1_rows 與 stage2_rows 是兩份清單。relevance_rows 含重疊列，不可當成不重複文章數或確認案例數。",
+  "counts": {
+    "stage1_rows": 1190,
+    "stage2_rows": 116,
+    "overlap_urls": 8,
+    "relevance_rows": 1306,
+    "official_exact_match_rows": 0,
+    "ai_structured_rows": 0,
+    "crowd_rag_rows": 0
+  },
+  "official_match_status_counts": {
+    "no_exact_match": 1177,
+    "not_in_snapshot": 129
+  },
+  "excluded_fields": [
+    "content",
+    "evidence_quotes",
+    "human_notes",
+    "ip_hash",
+    "narrative",
+    "narrative_redacted",
+    "reasoning",
+    "review_notes",
+    "reviewed_by",
+    "reviewer",
+    "user_agent_hash"
+  ],
+  "in_trusted_testset": false,
+  "crowd_rag_note": "user_submission_cases.csv 目前只有欄位名稱。核准後的列必須帶 source_label「群眾自述（未獨立查證）」，且不得寫回 ptt_scam_cases.csv。",
+  "files": {
+    "anti_scam_ptt_relevance_v0.jsonl": {
+      "sha256": "1ccdbf405247eed2eb0b33965f06a5867a96fd22c0623ea3d373c2b3e85d1eb4",
+      "bytes": 1182210,
+      "rows": 1306
+    },
+    "anti_scam_ptt_relevance_v0.csv": {
+      "sha256": "34231e7bff67ad3ec2fa4cfb8a7ff2882e77006aea02a1eb086500bcc8e75ed5",
+      "bytes": 489123,
+      "rows": 1306
+    },
+    "analysis_stage1.csv": {
+      "sha256": "8a43f34606751c694072addeb7b4fc1619e3711c6db2e61aff59256bf0187258",
+      "bytes": 268671,
+      "rows": 1190
+    },
+    "analysis_stage2.csv": {
+      "sha256": "84e39e761a627b4e05fcf11786a542a1fd1928cbe184d5d26dd85226e3f82563",
+      "bytes": 25539,
+      "rows": 116
+    },
+    "user_submission_cases.csv": {
+      "sha256": "0fbab3e2bad5e04d8f344dbf6e094b6cea1bcfd3d602d0226c7956294df5f86f",
+      "bytes": 123,
+      "rows": 0
+    },
+    "DATASHEET.md": {
+      "sha256": "1c34bcfa183b70355989ae36cd5ab4d666d4f72ac4922ea570d8503fdd927667",
+      "bytes": 4944,
+      "rows": null
+    },
+    "LICENSE.md": {
+      "sha256": "2b717e8433a8147cb799d54e57f7863f6468e30b06a676913d0e3c5b6c603091",
+      "bytes": 689,
+      "rows": null
+    },
+    "CITATION.txt": {
+      "sha256": "30d4a22ce9348147bddbc00a624ce01cba0cd225d4b7955f95800c71a1783978",
+      "bytes": 343,
+      "rows": null
+    },
+    "pii_patterns.json": {
+      "sha256": "673df6aca6247c9d76c7766aac23d917e95a6ae5cf91da98f9788365438d95b6",
+      "bytes": 1742,
+      "rows": null
+    },
+    "SHA256SUMS": {
+      "sha256": "828c802e5e23a99f985b88998747f6440a62b6d443f5334cc5e6e5268f9b802a",
+      "bytes": 779,
+      "rows": null
+    }
+  }
+}

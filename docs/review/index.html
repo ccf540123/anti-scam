@@ -11,10 +11,12 @@
     <div class="login-card">
       <p class="eyebrow">Anti-scam research</p>
       <h1>研究小組審查</h1>
-      <p class="lead">請輸入共同密碼。儲存後寫入 Supabase，全組共用同一份進度（不依賴 Render）。</p>
-      <label for="passwordInput">共同密碼</label>
-      <input id="passwordInput" type="password" autocomplete="current-password" placeholder="輸入密碼">
-      <button id="loginBtn" type="button" class="btn primary wide">進入審查</button>
+      <p class="lead">請用 Supabase 帳號登入。只有寫進 team_members 的組員可以審查 PTT 與群眾投稿。</p>
+      <label for="emailInput">Email</label>
+      <input id="emailInput" type="email" autocomplete="username" placeholder="you@example.com">
+      <label for="passwordInput">密碼</label>
+      <input id="passwordInput" type="password" autocomplete="current-password" placeholder="密碼">
+      <button id="loginBtn" type="button" class="btn primary wide">登入</button>
       <p id="loginError" class="error" hidden></p>
     </div>
   </div>
@@ -27,10 +29,11 @@
         <nav class="dataset-switch" aria-label="審查分類">
           <button type="button" class="dataset-btn active" data-dataset="ptt_candidate">第一階段 Temp 審查</button>
           <button type="button" class="dataset-btn" data-dataset="ptt_stage2_keyword">第二階段 Keyword 審查</button>
+          <button type="button" class="dataset-btn" data-dataset="crowd">群眾投稿</button>
         </nav>
       </div>
       <div class="topbar-actions">
-        <a class="btn" href="dashboard.html">資料分析</a>
+        <a class="btn" href="../index.html#analysis">公開分析</a>
         <button id="refreshBtn" type="button" class="btn">重新載入進度</button>
         <button id="logoutBtn" type="button" class="btn ghost">登出</button>
       </div>
@@ -49,6 +52,23 @@
       <p id="emptyStateHint">請先執行第一階段 pipeline，把 temp 文章同步到 GitHub Pages 後再來審查。</p>
       <pre id="emptyStateCmd" class="empty-cmd">python run_ptt_pipeline.py</pre>
     </div>
+
+    <section id="crowdPanel" class="crowd-panel" hidden>
+      <div class="crowd-toolbar">
+        <label for="crowdFilter">狀態</label>
+        <select id="crowdFilter">
+          <option value="pending">待審</option>
+          <option value="needs_redaction">需要再遮蔽</option>
+          <option value="approved">已核准</option>
+          <option value="rejected">已退回</option>
+          <option value="all">全部</option>
+        </select>
+        <button id="crowdReload" type="button" class="btn">重新讀取</button>
+      </div>
+      <p class="annotate-help">只有核准的投稿會進入公開統計與排行榜，並標成「群眾自述（未獨立查證）」。報案或提告本身不能當成 confirmed。若你改了去識別化正文，請再看一次 AI 摘要有沒有個資。</p>
+      <p id="crowdMessage" class="save-status"></p>
+      <div id="crowdList"></div>
+    </section>
 
     <main id="reviewMain" class="layout">
       <article class="panel read-panel">
@@ -176,6 +196,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <script src="config.js"></script>
+  <script src="crowd.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
