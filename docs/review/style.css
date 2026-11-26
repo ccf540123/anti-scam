@@ -67,6 +67,7 @@ label, legend {
 }
 
 input[type="password"],
+input[type="email"],
 input[type="text"],
 textarea {
   width: 100%;
@@ -79,6 +80,37 @@ textarea {
 }
 
 textarea { resize: vertical; min-height: 84px; }
+
+select {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 0.55rem 0.7rem;
+  font: inherit;
+  background: #fff;
+}
+
+.crowd-panel {
+  width: min(980px, calc(100% - 2rem));
+  margin: 0 auto 2rem;
+}
+
+.crowd-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: center;
+}
+
+.crowd-card {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.crowd-card h3 { margin: 0 0 0.4rem; font-size: 1.05rem; }
+.crowd-actions { display: flex; flex-wrap: wrap; gap: 0.45rem; margin-top: 0.7rem; }
 
 .btn {
   appearance: none;

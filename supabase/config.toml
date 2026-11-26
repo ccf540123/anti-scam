@@ -1,0 +1,4 @@
+project_id = "telxfakoomkscqzhqgto"
+
+[functions.submit-scam-experience]
+verify_jwt = false

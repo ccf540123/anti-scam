@@ -1,5 +1,11 @@
 (function () {
   const cfg = window.REVIEW_CONFIG || {};
+  const PATHS = window.ANALYSIS_PATHS || {
+    stage1: "dataset/analysis_stage1.csv",
+    stage2: "dataset/analysis_stage2.csv",
+    npa: "review/npa_type_counts.json",
+    catalog: "review/research_catalog.json",
+  };
   const PAGE_SIZE = 12;
   const LINK_LIMIT = 15;
 
@@ -61,6 +67,24 @@
       return value.split(/\n|、|\|/).map(function (item) { return item.trim(); }).filter(Boolean);
     }
     return [];
+  }
+
+  function shield(text) {
+    var value = String(text || "");
+    if (window.AntiScamPii && window.AntiScamPii.redact) return window.AntiScamPii.redact(value);
+    return value;
+  }
+
+  function hostsFrom(row) {
+    if (row.external_hosts) {
+      try {
+        var parsed = JSON.parse(row.external_hosts);
+        if (Array.isArray(parsed)) return unique(parsed.map(shield));
+      } catch (err) {
+        return unique(String(row.external_hosts).split("|").map(shield));
+      }
+    }
+    return hostsIn(row.content || "");
   }
 
   function hostsIn(text) {
@@ -142,11 +166,21 @@
   }
 
   async function fetchAnswers(datasetId) {
-    const { data, error } = await getClient()
-      .from("ptt_review_answers")
-      .select("review_id,dataset_id,content_relevant,url_relevant,keywords,status,human_notes,reviewer,review_status")
+    const columns = "review_id,dataset_id,content_relevant,url_relevant,keywords,status,review_status";
+    let result = await getClient()
+      .from("ptt_review_answers_public")
+      .select(columns)
       .eq("dataset_id", datasetId)
       .limit(2000);
+    if (result.error) {
+      result = await getClient()
+        .from("ptt_review_answers")
+        .select(columns)
+        .eq("dataset_id", datasetId)
+        .limit(2000);
+    }
+    const data = result.data;
+    const error = result.error;
     if (error) throw new Error(error.message || "讀取審查答案失敗");
     const map = {};
     (data || []).forEach(function (row) {
@@ -170,20 +204,17 @@
     return {
       phase: "第一階段",
       reviewId: row.review_id || "",
-      title: row.title || "（無標題）",
+      title: shield(row.title || "（無標題）"),
       board: row.source_board || "（看板空白）",
       url: row.article_url || "",
       canon: canon(row.article_url || ""),
-      content: row.content || "",
-      hosts: hostsIn(row.content || ""),
+      hosts: hostsFrom(row),
       complete: complete,
       contentRelevant: complete ? String(answer.content_relevant || "").trim() : "",
       urlRelevant: complete ? String(answer.url_relevant || "").trim() : "",
       status: complete ? String(answer.status || "").trim() : "",
-      keywords: complete ? unique(keywordList(answer.keywords)) : [],
-      reviewer: complete ? (answer.reviewer || "") : "",
-      notes: complete ? (answer.human_notes || "") : "",
-      searchKeyword: row.search_keyword || "",
+      keywords: complete ? unique(keywordList(answer.keywords).map(shield)) : [],
+      searchKeyword: shield(row.search_keyword || ""),
     };
   }
 
@@ -194,18 +225,16 @@
     return {
       phase: "第二階段",
       reviewId: row.review_id || "",
-      title: row.title || "（無標題）",
+      title: shield(row.title || "（無標題）"),
       board: row.source_board || "（看板空白）",
       url: row.article_url || "",
       canon: canon(row.article_url || ""),
-      content: row.content || "",
+      hosts: hostsFrom(row),
       complete: Boolean(grade),
       grade: grade,
-      keywords: unique(String(row.search_keyword || "").split("、").map(function (item) { return item.trim(); }).filter(Boolean)),
+      keywords: unique(String(row.search_keyword || "").split("、").map(function (item) { return shield(item.trim()); }).filter(Boolean)),
       stage1Flag: row.stage1_flag || "",
-      reviewer: answer ? (answer.reviewer || "") : "",
-      notes: answer ? (answer.human_notes || "") : "",
-      searchKeyword: row.search_keyword || "",
+      searchKeyword: shield(row.search_keyword || ""),
     };
   }
 
@@ -438,7 +467,6 @@
       bits.push("<p>人工 keyword：" + escapeHtml(row.keywords.join("、") || "—") + "</p>");
     }
     if (row.url) bits.push('<p><a href="' + escapeHtml(row.url) + '" target="_blank" rel="noopener">' + escapeHtml(row.url) + "</a></p>");
-    if (row.content) bits.push("<pre>" + escapeHtml(row.content.slice(0, 700)) + (row.content.length > 700 ? "…" : "") + "</pre>");
     bits.push("</article>");
     return bits.join("");
   }
@@ -513,7 +541,7 @@
     const parts = articleReview(article, maps);
     return {
       phase: "研究清單",
-      title: article.title || "（無標題）",
+      title: shield(article.title || "（無標題）"),
       board: (article.boards || []).join("、") || "—",
       url: article.url,
       content: "",
@@ -627,7 +655,7 @@
       const parts = articleReview(article, maps);
       if (review !== "all" && !parts.some(function (part) { return part.id === review; })) return false;
       if (!query) return true;
-      return (article.title || "").toLowerCase().indexOf(query) >= 0 || (article.url || "").toLowerCase().indexOf(query) >= 0;
+      return shield(article.title || "").toLowerCase().indexOf(query) >= 0 || (article.url || "").toLowerCase().indexOf(query) >= 0;
     });
   }
 
@@ -644,9 +672,9 @@
     document.getElementById("caseTable").innerHTML = slice.map(function (article) {
       const parts = articleReview(article, maps);
       const id = "case:" + article.case_id;
-      remember(id, article.title || "（無標題）", [catalogArticleRow(article, maps)], parts.map(function (part) { return part.text; }).join("、"));
+      remember(id, shield(article.title || "（無標題）"), [catalogArticleRow(article, maps)], parts.map(function (part) { return part.text; }).join("、"));
       const when = article.year ? String(article.year) : "日期缺失";
-      return "<tr><td><button type=\"button\" data-select=\"" + escapeHtml(id) + "\">" + escapeHtml(article.title || "（無標題）") + "</button></td><td>" +
+      return "<tr><td><button type=\"button\" data-select=\"" + escapeHtml(id) + "\">" + escapeHtml(shield(article.title || "（無標題）")) + "</button></td><td>" +
         escapeHtml(article.datasets.map(datasetName).join("、")) + "</td><td>" + escapeHtml(when) + "</td><td><a href=\"" +
         escapeHtml(article.url) + "\" target=\"_blank\" rel=\"noopener\">" + escapeHtml(article.url) + "</a></td><td>" +
         escapeHtml(parts.map(function (part) { return part.text; }).join("、")) + "</td></tr>";
@@ -691,18 +719,16 @@
     loading.hidden = false;
     loadError.hidden = true;
     dashboard.hidden = true;
-    const itemsUrl = cfg.ITEMS_CSV_URL || "items.csv";
-    const stage2Url = cfg.STAGE2_ITEMS_CSV_URL || "stage2_items.csv";
     const [items, stage2Rows, answers1, answers2, npaPayload, catalogPayload] = await Promise.all([
-      parseCsv(itemsUrl),
-      parseCsv(stage2Url),
+      parseCsv(PATHS.stage1),
+      parseCsv(PATHS.stage2),
       fetchAnswers(cfg.DATASET_ID || "ptt_candidate"),
       fetchAnswers(cfg.STAGE2_DATASET_ID || "ptt_stage2_keyword"),
-      fetch("npa_type_counts.json").then(function (response) {
+      fetch(PATHS.npa).then(function (response) {
         if (!response.ok) throw new Error("無法讀取 165 彙總");
         return response.json();
       }),
-      fetch("research_catalog.json").then(function (response) {
+      fetch(PATHS.catalog).then(function (response) {
         if (!response.ok) throw new Error("無法讀取研究清單彙總");
         return response.json();
       }),
@@ -717,23 +743,27 @@
     chartInstances.forEach(function (chart) { chart.resize(); });
   });
 
+  function navRoot() {
+    return document.querySelector(".analysis-root") || document.body;
+  }
+
   document.getElementById("sideNav").addEventListener("click", function (event) {
     const button = event.target.closest("[data-view]");
     if (!button) return;
     showView(button.getAttribute("data-view"));
-    document.body.classList.remove("nav-open");
+    navRoot().classList.remove("nav-open");
     document.getElementById("navScrim").hidden = true;
     document.getElementById("menuBtn").setAttribute("aria-expanded", "false");
   });
 
   document.getElementById("menuBtn").addEventListener("click", function () {
-    const open = document.body.classList.toggle("nav-open");
+    const open = navRoot().classList.toggle("nav-open");
     document.getElementById("navScrim").hidden = !open;
     document.getElementById("menuBtn").setAttribute("aria-expanded", open ? "true" : "false");
   });
 
   document.getElementById("navScrim").addEventListener("click", function () {
-    document.body.classList.remove("nav-open");
+    navRoot().classList.remove("nav-open");
     document.getElementById("navScrim").hidden = true;
     document.getElementById("menuBtn").setAttribute("aria-expanded", "false");
   });
@@ -760,6 +790,10 @@
       loadError.hidden = false;
       loadError.textContent = err.message || String(err);
     });
+  });
+
+  window.addEventListener("analysis-shown", function () {
+    chartInstances.forEach(function (chart) { chart.resize(); });
   });
 
   load().catch(function (err) {

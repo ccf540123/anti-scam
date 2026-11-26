@@ -25,35 +25,10 @@ create index if not exists ptt_review_answers_review_status_idx
 
 alter table public.ptt_review_answers enable row level security;
 
--- 前端只用 anon key；允許讀取全部答案
+-- 2026-11-26 起，anon 不再能寫入，也不能讀 reviewer / human_notes。
+-- 正式政策在 supabase/migrations/20261126120000_team_review_and_crowd.sql。
+-- 這份舊檔只負責刪掉先前過寬的政策，避免有人重跑後又把表打開。
 drop policy if exists "ptt_review_answers_anon_select" on public.ptt_review_answers;
-create policy "ptt_review_answers_anon_select"
-  on public.ptt_review_answers
-  for select
-  to anon
-  using (true);
-
--- 允許新增（未審文章第一次儲存）
 drop policy if exists "ptt_review_answers_anon_insert" on public.ptt_review_answers;
-create policy "ptt_review_answers_anon_insert"
-  on public.ptt_review_answers
-  for insert
-  to anon
-  with check (true);
-
--- 僅允許更新「尚未 reviewed」的列（已完成鎖定）
 drop policy if exists "ptt_review_answers_anon_update_unlocked" on public.ptt_review_answers;
-create policy "ptt_review_answers_anon_update_unlocked"
-  on public.ptt_review_answers
-  for update
-  to anon
-  using (coalesce(review_status, '') <> 'reviewed')
-  with check (true);
-
--- 禁止 anon 刪除
 drop policy if exists "ptt_review_answers_anon_delete" on public.ptt_review_answers;
-create policy "ptt_review_answers_anon_delete"
-  on public.ptt_review_answers
-  for delete
-  to anon
-  using (false);

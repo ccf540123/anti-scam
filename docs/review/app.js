@@ -46,8 +46,8 @@
   let datasetId = sessionStorage.getItem(DATASET_SESSION_KEY) || cfg.DATASET_ID || "ptt_candidate";
   if (!DATASETS[datasetId]) datasetId = "ptt_candidate";
   const REFRESH_MS = 45000;
-  const SESSION_KEY = "ptt_review_auth_v1";
   const GRADES = ["A", "B", "C"];
+  let currentMember = null;
 
   function currentDataset() {
     return DATASETS[datasetId];
@@ -95,13 +95,23 @@
     appView.hidden = false;
   }
 
-  function isAuthed() {
-    return sessionStorage.getItem(SESSION_KEY) === "1";
-  }
-
-  function setAuthed(ok) {
-    if (ok) sessionStorage.setItem(SESSION_KEY, "1");
-    else sessionStorage.removeItem(SESSION_KEY);
+  async function requireTeamMember(client) {
+    const userResult = await client.auth.getUser();
+    if (userResult.error || !userResult.data.user) {
+      throw new Error("請先用研究小組帳號登入");
+    }
+    const memberResult = await client
+      .from("team_members")
+      .select("user_id,email")
+      .eq("user_id", userResult.data.user.id)
+      .maybeSingle();
+    if (memberResult.error) throw new Error(memberResult.error.message || "無法確認組員身份");
+    if (!memberResult.data) {
+      await client.auth.signOut();
+      throw new Error("這個帳號不在研究小組名單。請管理員把 email 寫進 team_members。");
+    }
+    currentMember = memberResult.data;
+    return currentMember;
   }
 
   function parseKeywordsText(text) {
@@ -631,6 +641,28 @@
   }
 
   async function switchDataset(nextId) {
+    const crowdPanel = document.getElementById("crowdPanel");
+    if (nextId === "crowd") {
+      if (dirty) {
+        const ok = window.confirm("有未儲存變更，切換分類會捨棄本機編輯。繼續？");
+        if (!ok) return;
+        dirty = false;
+      }
+      datasetId = "crowd";
+      document.querySelectorAll(".dataset-btn").forEach(function (btn) {
+        btn.classList.toggle("active", btn.getAttribute("data-dataset") === "crowd");
+      });
+      document.getElementById("datasetEyebrow").textContent = "群眾投稿審核";
+      document.getElementById("datasetHeading").textContent = "待審通過後才會公開";
+      reviewMain.hidden = true;
+      emptyState.hidden = true;
+      if (crowdPanel) crowdPanel.hidden = false;
+      document.getElementById("progressText").textContent = "群眾投稿不計入 PTT 審查進度";
+      if (window.CrowdReview) window.CrowdReview.open(getClient(), currentMember);
+      return;
+    }
+    if (crowdPanel) crowdPanel.hidden = true;
+    reviewMain.hidden = false;
     if (!DATASETS[nextId] || nextId === datasetId) return;
     if (dirty) {
       const ok = window.confirm("有未儲存變更，切換分類會捨棄本機編輯。繼續？");
@@ -654,21 +686,24 @@
 
   loginBtn.addEventListener("click", async function () {
     loginError.hidden = true;
+    loginBtn.disabled = true;
     try {
       if (!configReady()) {
-        throw new Error("請先設定 docs/review/config.js 的 Supabase 公開金鑰");
+        throw new Error("請先設定 docs/review/config.js 的 Supabase 公開網址與 anon key");
       }
-      const expected = String(cfg.REVIEW_PASSWORD || "");
-      if (!expected || passwordInput.value !== expected) {
-        throw new Error("密碼錯誤");
-      }
-      getClient();
-      setAuthed(true);
+      const email = document.getElementById("emailInput").value.trim();
+      const password = passwordInput.value;
+      if (!email || !password) throw new Error("請輸入 email 和密碼");
+      const client = getClient();
+      const signed = await client.auth.signInWithPassword({ email: email, password: password });
+      if (signed.error) throw new Error("登入失敗，請確認 email 與密碼");
+      await requireTeamMember(client);
       passwordInput.value = "";
       await enterApp();
     } catch (err) {
       showLogin(err.message || "登入失敗");
     }
+    loginBtn.disabled = false;
   });
 
   passwordInput.addEventListener("keydown", function (event) {
@@ -690,8 +725,9 @@
       if (!ok) return;
     }
     if (refreshTimer) clearInterval(refreshTimer);
-    setAuthed(false);
+    currentMember = null;
     items = [];
+    getClient().auth.signOut();
     showLogin();
   });
 
@@ -753,12 +789,21 @@
     event.returnValue = "";
   });
 
-  if (isAuthed()) {
-    enterApp().catch(function (err) {
-      setAuthed(false);
+  try {
+    getClient().auth.getSession().then(function (result) {
+      if (!result.data || !result.data.session) {
+        showLogin();
+        return;
+      }
+      requireTeamMember(getClient()).then(function () {
+        return enterApp();
+      }).catch(function (err) {
+        showLogin(err.message || "請重新登入");
+      });
+    }).catch(function (err) {
       showLogin(err.message || "請重新登入");
     });
-  } else {
-    showLogin();
+  } catch (err) {
+    showLogin(err.message || "請先設定 Supabase");
   }
 })();

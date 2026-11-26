@@ -149,7 +149,25 @@ https://ccf540123.github.io/anti-scam/
 | 正式後端 | Render Free，`gunicorn app:app ...` | Render 雲端，不必開筆電 |
 | 正式前端 | GitHub Pages 托管 `docs/` | GitHub，不必開筆電 |
 
-## 研究小組 Review（密碼保護）
+## 公開網站與資料集
+
+GitHub Pages 的首頁把檢測、研究分析、CC0 開放資料集、群眾經驗投稿和已核准排行榜放在同一個網站。
+
+```text
+https://ccf540123.github.io/anti-scam/
+```
+
+研究分析舊網址 `docs/review/dashboard.html` 會轉到 `#analysis`。
+
+重新產生資料集（不會改原始 CSV，也不會連資料庫）：
+
+```bash
+python scripts/export_public_dataset.py
+```
+
+審查頁改為 Supabase Auth，步驟寫在 `docs/review/SETUP.md`。`docs/review/config.js` 不再放共同密碼。
+
+## 研究小組 Review（Flask 密碼保護，舊路徑）
 
 公開檢測網站仍是 GitHub Pages 的 `docs/`。  
 人工審查介面只掛在 **Flask 後端**，路徑：

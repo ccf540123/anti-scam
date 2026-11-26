@@ -1,0 +1,8 @@
+定偉（2026）。反詐騙專題 PTT 議題相關性資料集（版本 v0.1）[資料集]。
+https://ccf540123.github.io/anti-scam/#dataset
+
+Ding-Wei Chen (2026). Anti-scam PTT Topic-Relevance Dataset (v0.1) [Data set].
+https://ccf540123.github.io/anti-scam/#dataset
+
+授權：CC0 1.0 Universal
+標籤意義：topic_relevance_not_scam_truth
