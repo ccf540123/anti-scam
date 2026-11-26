@@ -28,6 +28,11 @@
     stage2: "第二階段",
     team_keywords: "team keywords",
   };
+  const EXTRA_TITLES = {
+    detect: "AI 檢測",
+    share: "分享經驗",
+  };
+  let extraView = null;
   const VIEW_TITLES = {
     overview: "資料總覽",
     overlap: "清單交叉",
@@ -360,9 +365,30 @@
     });
   }
 
+  function showExtra(name) {
+    if (!EXTRA_TITLES[name]) return;
+    extraView = name;
+    document.querySelectorAll("[data-panel]").forEach(function (panel) {
+      panel.hidden = panel.getAttribute("data-panel") !== name;
+    });
+    dashboard.hidden = true;
+    loading.hidden = true;
+    const reload = document.getElementById("reloadBtn");
+    if (reload) reload.hidden = true;
+    const title = document.getElementById("viewTitle");
+    if (title) title.textContent = EXTRA_TITLES[name];
+    document.querySelectorAll("#sideNav button").forEach(function (button) {
+      button.classList.toggle("is-active", button.getAttribute("data-view") === name);
+    });
+  }
+
   function showView(name) {
     if (!VIEW_TITLES[name]) return;
+    extraView = null;
     activeView = name;
+    dashboard.hidden = false;
+    const reload = document.getElementById("reloadBtn");
+    if (reload) reload.hidden = false;
     document.querySelectorAll("[data-panel]").forEach(function (panel) {
       panel.hidden = panel.getAttribute("data-panel") !== name;
     });
@@ -703,7 +729,8 @@
     renderCases();
     if (selection && model.selections[selection.id]) selection = model.selections[selection.id];
     renderExplorer();
-    showView(activeView);
+    if (extraView) showExtra(extraView);
+    else showView(activeView);
   }
 
   function choose(id) {
@@ -750,7 +777,10 @@
   document.getElementById("sideNav").addEventListener("click", function (event) {
     const button = event.target.closest("[data-view]");
     if (!button) return;
-    showView(button.getAttribute("data-view"));
+    const viewName = button.getAttribute("data-view");
+    if (EXTRA_TITLES[viewName]) showExtra(viewName);
+    else showView(viewName);
+    if (history.replaceState) history.replaceState(null, "", "#" + viewName);
     navRoot().classList.remove("nav-open");
     document.getElementById("navScrim").hidden = true;
     document.getElementById("menuBtn").setAttribute("aria-expanded", "false");
@@ -795,6 +825,10 @@
   window.addEventListener("analysis-shown", function () {
     chartInstances.forEach(function (chart) { chart.resize(); });
   });
+
+  const hashView = (location.hash || "").replace("#", "");
+  if (EXTRA_TITLES[hashView]) extraView = hashView;
+  else if (VIEW_TITLES[hashView]) activeView = hashView;
 
   load().catch(function (err) {
     loadError.hidden = false;

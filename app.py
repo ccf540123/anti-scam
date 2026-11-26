@@ -253,9 +253,22 @@ def review_home():
 
 @app.route("/review/<path:filename>", methods=["GET"])
 def review_static(filename):
-    # 只允許前端靜態檔，不直接暴露研究 CSV
+    # 舊的 Flask 審查頁只用這三個檔。
     if filename in {"index.html", "style.css", "app.js"}:
         return send_from_directory("review", filename)
+    # 公開分析頁的樣式、腳本與彙總在 docs/review。
+    # 不從這裡送出含 PTT 全文的 items.csv。
+    public_name = os.path.basename(filename)
+    if public_name in {
+        "dashboard.css",
+        "dashboard.js",
+        "dashboard.html",
+        "config.js",
+        "npa_type_counts.json",
+        "research_catalog.json",
+        "crowd.js",
+    }:
+        return send_from_directory(os.path.join("docs", "review"), filename)
     abort(404)
 
 
