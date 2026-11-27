@@ -376,7 +376,17 @@
     const reload = document.getElementById("reloadBtn");
     if (reload) reload.hidden = true;
     const title = document.getElementById("viewTitle");
-    if (title) title.textContent = EXTRA_TITLES[name];
+    const top = document.querySelector(".workspace .top");
+    if (name === "detect") {
+      if (title) title.hidden = true;
+      if (top) top.classList.add("is-plain");
+    } else {
+      if (title) {
+        title.hidden = false;
+        title.textContent = EXTRA_TITLES[name];
+      }
+      if (top) top.classList.remove("is-plain");
+    }
     document.querySelectorAll("#sideNav button").forEach(function (button) {
       button.classList.toggle("is-active", button.getAttribute("data-view") === name);
     });
@@ -396,7 +406,12 @@
       button.classList.toggle("is-active", button.getAttribute("data-view") === name);
     });
     const title = document.getElementById("viewTitle");
-    if (title) title.textContent = VIEW_TITLES[name];
+    const top = document.querySelector(".workspace .top");
+    if (top) top.classList.remove("is-plain");
+    if (title) {
+      title.hidden = false;
+      title.textContent = VIEW_TITLES[name];
+    }
     window.requestAnimationFrame(function () {
       chartInstances.forEach(function (chart) {
         if (chart.$panel === name) chart.resize();

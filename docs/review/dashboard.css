@@ -97,6 +97,14 @@
   padding-bottom: 0.8rem;
   border-bottom: 1px solid var(--line);
 }
+.analysis-root .top.is-plain {
+  border-bottom: 0;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+@media (min-width: 901px) {
+  .analysis-root .top.is-plain { display: none; }
+}
 .analysis-root .top-actions,
 .analysis-root .pager { display: flex; gap: 0.45rem; flex-wrap: wrap; }
 .analysis-root .menu-btn { display: none; }
