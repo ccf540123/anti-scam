@@ -99,11 +99,24 @@ if (chatForm) {
     ask();
   });
 
+  // 中文輸入時，第一次 Enter 只是選字、消掉底線。第二次 Enter 才送出。
+  let composing = false;
+  let skipEnter = false;
+  userText.addEventListener("compositionstart", function () {
+    composing = true;
+  });
+  userText.addEventListener("compositionend", function () {
+    composing = false;
+    skipEnter = true;
+    setTimeout(function () {
+      skipEnter = false;
+    }, 0);
+  });
   userText.addEventListener("keydown", function (event) {
-    if (event.key === "Enter" && !event.shiftKey) {
-      event.preventDefault();
-      ask();
-    }
+    if (event.key !== "Enter" || event.shiftKey) return;
+    if (composing || event.isComposing || event.keyCode === 229 || skipEnter) return;
+    event.preventDefault();
+    ask();
   });
   userText.addEventListener("input", resizeText);
   userImage.addEventListener("change", showFileName);
