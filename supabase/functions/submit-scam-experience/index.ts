@@ -19,7 +19,7 @@ const CORS = {
 const CASE_NATURES = ["我是當事人", "我轉述親友", "我僅提供手法觀察"];
 const OUTCOMES = ["有損失", "沒有損失", "不確定"];
 const AMOUNTS = ["", "0", "1–1千", "1千–1萬", "1萬–10萬", "10萬–100萬", "100萬以上", "不願提供"];
-const CHANNELS = ["電話", "簡訊", "LINE", "Facebook", "IG", "購物平台", "ATM／超商", "電子郵件", "其他"];
+const CHANNELS = ["電話", "簡訊", "LINE", "Facebook", "IG", "購物平台", "ATM／超商", "電子郵件", "Threads", "抖音 / TikTok", "交友 App", "賣貨便", "其他"];
 const REGIONS = [
   "",
   "台北市", "新北市", "桃園市", "台中市", "台南市", "高雄市", "基隆市", "新竹市", "嘉義市",
