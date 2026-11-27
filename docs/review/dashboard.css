@@ -94,9 +94,8 @@
   gap: 0.8rem;
   align-items: center;
   margin-bottom: 1rem;
-  padding-bottom: 0.8rem;
-  border-bottom: 1px solid var(--line);
 }
+.analysis-root #viewTitle { display: none; }
 .analysis-root .top.is-plain {
   border-bottom: 0;
   margin-bottom: 0;
