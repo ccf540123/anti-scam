@@ -1,98 +1,122 @@
-// 先用 querySelector 找到頁面上的元素
+// AI 檢測的對話畫面。後端網址在 config.js，這裡沒有金鑰。
 const userText = document.querySelector("#userText");
 const userImage = document.querySelector("#userImage");
-const checkBtn = document.querySelector("#checkBtn");
-const checkImageBtn = document.querySelector("#checkImageBtn");
+const chatForm = document.querySelector("#chatForm");
+const chatLog = document.querySelector("#chatLog");
+const chatEmpty = document.querySelector("#chatEmpty");
+const sendBtn = document.querySelector("#checkBtn");
 const clearBtn = document.querySelector("#clearBtn");
-const resultBox = document.querySelector("#resultBox");
+const fileName = document.querySelector("#chatFileName");
 
-// API_BASE_URL 來自 config.js
-// 本機留空；GitHub Pages 請填 Render 後端網址
 function apiUrl(path) {
   const base = (window.API_BASE_URL || "").replace(/\/$/, "");
   return base + path;
 }
 
-function setLoading(isLoading, message) {
-  checkBtn.disabled = isLoading;
-  checkImageBtn.disabled = isLoading;
-  if (isLoading) {
-    resultBox.className = "is-loading";
-    resultBox.textContent = message;
-  }
+function addMessage(role, text) {
+  if (chatEmpty) chatEmpty.hidden = true;
+  const item = document.createElement("article");
+  item.className = "chat-msg " + role;
+  const bubble = document.createElement("div");
+  bubble.className = "chat-bubble";
+  bubble.textContent = text;
+  item.appendChild(bubble);
+  chatLog.appendChild(item);
+  chatLog.scrollTop = chatLog.scrollHeight;
+  return bubble;
 }
 
-// fetch：用 JavaScript 向後端送資料，並等待回應
-async function checkText() {
-  const text = userText.value.trim();
-
-  if (!text) {
-    resultBox.className = "is-error";
-    resultBox.textContent = "請先貼上可疑的文字或網址。";
-    return;
-  }
-
-  setLoading(true, "文字分析中，請稍候...");
-
-  try {
-    const response = await fetch(apiUrl("/api/check"), {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ text: text })
-    });
-
-    const data = await response.json();
-    resultBox.className = "";
-    resultBox.textContent = data.result;
-  } catch (error) {
-    resultBox.className = "is-error";
-    resultBox.textContent = "無法連線到伺服器。請確認後端已部署，且 config.js 的 API 網址正確。";
-  }
-
-  setLoading(false);
+function resizeText() {
+  userText.style.height = "auto";
+  userText.style.height = Math.min(userText.scrollHeight, 160) + "px";
 }
 
-// FormData：專門用來上傳檔案（圖片）給後端
-async function checkImage() {
+function showFileName() {
   const file = userImage.files[0];
-
+  if (!fileName) return;
   if (!file) {
-    resultBox.className = "is-error";
-    resultBox.textContent = "請先選擇一張圖片。";
+    fileName.hidden = true;
+    fileName.textContent = "";
     return;
   }
-
-  setLoading(true, "圖片分析中，請稍候...");
-
-  try {
-    const formData = new FormData();
-    formData.append("image", file);
-
-    const response = await fetch(apiUrl("/api/check-image"), {
-      method: "POST",
-      body: formData
-    });
-
-    const data = await response.json();
-    resultBox.className = "";
-    resultBox.textContent = data.result;
-  } catch (error) {
-    resultBox.className = "is-error";
-    resultBox.textContent = "無法連線到伺服器。請確認後端已部署，且 config.js 的 API 網址正確。";
-  }
-
-  setLoading(false);
+  fileName.hidden = false;
+  fileName.textContent = "已附上圖片：" + file.name;
 }
 
-checkBtn.addEventListener("click", checkText);
-checkImageBtn.addEventListener("click", checkImage);
+async function readResult(response) {
+  const data = await response.json();
+  if (!data || !data.result) return "沒有回傳結果。";
+  return data.result;
+}
 
-clearBtn.addEventListener("click", function () {
+async function ask() {
+  const text = userText.value.trim();
+  const file = userImage.files[0];
+  if (!text && !file) return;
+
+  let shown = text;
+  if (file) {
+    shown = text ? text + "\n（圖片：" + file.name + "）" : "（圖片：" + file.name + "）";
+  }
+  addMessage("user", shown);
   userText.value = "";
+  resizeText();
+  sendBtn.disabled = true;
+  const pending = addMessage("assistant", "分析中，請稍候…");
+
+  try {
+    if (text) {
+      const response = await fetch(apiUrl("/api/check"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: text })
+      });
+      pending.textContent = await readResult(response);
+    }
+    if (file) {
+      const imageBubble = text ? addMessage("assistant", "圖片分析中…") : pending;
+      const formData = new FormData();
+      formData.append("image", file);
+      const response = await fetch(apiUrl("/api/check-image"), {
+        method: "POST",
+        body: formData
+      });
+      imageBubble.textContent = await readResult(response);
+    }
+  } catch (error) {
+    pending.textContent = "無法連線到伺服器。服務如果剛睡醒，請再等一下重試。";
+  }
+
   userImage.value = "";
-  resultBox.className = "";
-  resultBox.textContent = "結果會顯示在這裡。";
+  showFileName();
+  sendBtn.disabled = false;
   userText.focus();
-});
+}
+
+if (chatForm) {
+  chatForm.addEventListener("submit", function (event) {
+    event.preventDefault();
+    ask();
+  });
+
+  userText.addEventListener("keydown", function (event) {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      ask();
+    }
+  });
+  userText.addEventListener("input", resizeText);
+  userImage.addEventListener("change", showFileName);
+
+  clearBtn.addEventListener("click", function () {
+    chatLog.querySelectorAll(".chat-msg").forEach(function (item) {
+      item.remove();
+    });
+    if (chatEmpty) chatEmpty.hidden = false;
+    userText.value = "";
+    userImage.value = "";
+    showFileName();
+    resizeText();
+    userText.focus();
+  });
+}

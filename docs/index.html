@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>反詐騙檢測與研究</title>
-  <link rel="stylesheet" href="review/dashboard.css?v=4">
+  <link rel="stylesheet" href="review/dashboard.css?v=5">
 </head>
 <body class="analysis-root">
   <div class="shell">
@@ -37,23 +37,28 @@
         </div>
       </header>
 
-      <section id="detect" data-panel="detect" hidden>
-        <div class="ask-card">
-          <p class="caption">貼上可疑網址、完整訊息，或上傳截圖。系統會用 165 名單與 AI 幫你看風險。名單命中不是法院認定，沒有命中也不代表安全。</p>
-          <label for="userText">可疑內容</label>
-          <textarea id="userText" placeholder="例如：請立即點擊 https://example.com 完成驗證，否則帳戶將被停用"></textarea>
-          <label for="userImage">或上傳可疑截圖</label>
-          <div class="file-row">
-            <input id="userImage" type="file" accept="image/*">
+      <section id="detect" class="chat-screen" data-panel="detect" hidden>
+        <div id="chatLog" class="chat-log">
+          <div id="chatEmpty" class="chat-empty">
+            <h2>反詐騙檢測</h2>
+            <p>貼上可疑訊息、網址，或附一張截圖。我會用 165 名單和 AI 幫你看風險。</p>
           </div>
-          <div class="ask-actions">
-            <button id="checkBtn" type="button" class="btn primary">分析文字</button>
-            <button id="checkImageBtn" type="button" class="btn">分析圖片</button>
-            <button id="clearBtn" type="button" class="btn">清空</button>
-          </div>
-          <div id="resultBox">結果會顯示在這裡。</div>
-          <p class="hint">文字太短時，建議貼上完整對話。圖片請選對話截圖、簡訊或可疑網頁。</p>
         </div>
+        <form id="chatForm" class="chat-composer">
+          <p id="chatFileName" class="chat-file" hidden></p>
+          <div class="chat-box">
+            <textarea id="userText" rows="1" placeholder="傳訊息…"></textarea>
+            <div class="chat-tools">
+              <label class="chat-attach">
+                圖片
+                <input id="userImage" type="file" accept="image/*">
+              </label>
+              <button id="clearBtn" type="button" class="chat-ghost">新對話</button>
+              <button id="checkBtn" type="submit" class="chat-send">送出</button>
+            </div>
+          </div>
+          <p class="chat-note">名單命中不是法院認定。服務若剛睡醒，第一次可能要等約一分鐘。</p>
+        </form>
       </section>
 
       <section id="share" data-panel="share" hidden>
