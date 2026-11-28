@@ -108,7 +108,7 @@
     if (memberResult.error) throw new Error(memberResult.error.message || "無法確認組員身份");
     if (!memberResult.data) {
       await client.auth.signOut();
-      throw new Error("這個帳號不在研究小組名單。請管理員把 email 寫進 team_members。");
+      throw new Error("這個共用帳號還沒有加入研究小組名單。請管理員到 Supabase 把帳號寫進 team_members。");
     }
     currentMember = memberResult.data;
     return currentMember;
@@ -691,12 +691,22 @@
       if (!configReady()) {
         throw new Error("請先設定 docs/review/config.js 的 Supabase 公開網址與 anon key");
       }
-      const email = document.getElementById("emailInput").value.trim();
+      const email = String(cfg.TEAM_LOGIN_EMAIL || "").trim();
       const password = passwordInput.value;
-      if (!email || !password) throw new Error("請輸入 email 和密碼");
+      if (!email || email.indexOf("@") === -1) {
+        throw new Error("請先在 docs/review/config.js 填入研究小組共用帳號的 email（TEAM_LOGIN_EMAIL）");
+      }
+      if (!password) throw new Error("請輸入密碼");
       const client = getClient();
       const signed = await client.auth.signInWithPassword({ email: email, password: password });
-      if (signed.error) throw new Error("登入失敗，請確認 email 與密碼");
+      if (signed.error) {
+        const detail = String(signed.error.message || "").toLowerCase();
+        const code = String(signed.error.code || "").toLowerCase();
+        if (detail.indexOf("invalid login credentials") !== -1 || code === "invalid_credentials") {
+          throw new Error("密碼不正確");
+        }
+        throw new Error("登入失敗，請稍後再試");
+      }
       await requireTeamMember(client);
       passwordInput.value = "";
       await enterApp();
