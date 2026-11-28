@@ -2,7 +2,9 @@
 
 公開網站在 `docs/index.html`。審查頁在 `docs/review/index.html`，只給研究小組。
 
-登入用 Supabase Auth 的 email 與密碼。`docs/review/config.js` 只放 Project URL 和 Publishable key，不要放密碼或 service role key。
+登入畫面只問密碼。全組共用一個 Supabase Auth 帳號。帳號的 email 寫在 `docs/review/config.js` 的 `TEAM_LOGIN_EMAIL`（目前是 `review-team@example.com`）。這個 email 可以公開。密碼只放在 Supabase，不要寫進 GitHub、設定檔或前端程式。
+
+沒有登入的人仍然讀不到、也改不了審查資料。資料庫用 `team_members` 和 RLS 把權限鎖在已登入、而且在名單裡的帳號。
 
 ## 1. 在 Supabase 執行遷移
 
@@ -12,21 +14,34 @@
 
 這段 SQL 可以重複執行。它不會刪除既有的 `ptt_review_answers` 列。
 
-## 2. 建立組員帳號
+## 2. 建立全組共用的一個帳號
 
-1. Authentication → Users → Add user
-2. 填組員 email 與密碼，並標成已確認（confirmed）
-3. 回到 SQL Editor，把這個人寫進名單（把 email 換成真實地址）：
+這一步只要做一次。做完之後，組員打開審查頁，只輸入密碼就能進去。大家用同一組密碼，審查紀錄不會顯示是誰登入的。儲存時仍可在「檢視者」自己填名字。
+
+1. 打開這個專案的 Supabase 後台。
+2. 左邊點 **Authentication**，再點 **Users**。
+3. 點 **Add user**，選建立新使用者。
+4. Email 填 `review-team@example.com`。要和 `docs/review/config.js` 裡的 `TEAM_LOGIN_EMAIL` 完全一樣。
+5. 設一組只有研究小組知道的密碼，再把這組密碼口頭或用安全的方式告訴組員。不要把密碼寫進 GitHub。
+6. 勾選 **Auto Confirm User**（自動確認）。這樣不用收驗證信就能登入。
+7. 按下建立。
+8. 左邊點 **SQL Editor**，貼上下面這段，按 **Run**：
 
 ```sql
 insert into public.team_members (user_id, email)
 select id, email
 from auth.users
-where lower(email) = lower('member@example.com')
+where lower(email) = lower('review-team@example.com')
 on conflict (user_id) do update set email = excluded.email;
 ```
 
-不在 `team_members` 裡的帳號即使密碼正確，也進不了審查頁。
+這段只會把剛建立的共用帳號加進名單，不會刪除既有的審查答案。
+
+9. 打開審查頁，只輸入第 5 步的密碼。密碼錯會停在登入畫面。密碼對，而且第 8 步有做，才會進審查。
+
+如果後台不接受 `review-team@example.com`，改用另一個 email。然後把 `docs/review/config.js` 的 `TEAM_LOGIN_EMAIL` 改成同一個地址，SQL 裡的 email 也改成同一個地址。三處要一致。
+
+密碼正確但還沒做第 8 步時，頁面會把人送回登入畫面，因為不在 `team_members` 裡就不能讀寫審查資料。舊的個人帳號可以留著，審查頁不會再請人輸入那些 email。
 
 ## 3. 部署投稿 Edge Function
 

@@ -165,7 +165,7 @@ https://ccf540123.github.io/anti-scam/
 python scripts/export_public_dataset.py
 ```
 
-審查頁改為 Supabase Auth，步驟寫在 `docs/review/SETUP.md`。`docs/review/config.js` 不再放共同密碼。
+審查頁用 Supabase Auth。登入畫面只輸入共同密碼；共用帳號的 email 寫在 `docs/review/config.js` 的 `TEAM_LOGIN_EMAIL`，密碼不要寫進 repo。步驟見 `docs/review/SETUP.md`。
 
 ## 研究小組 Review（Flask 密碼保護，舊路徑）
 
